@@ -261,6 +261,60 @@
             font-size: 12px;
         }
         .toggle-track.active .toggle-thumb { transform: translateX(24px); }
+
+        /* Compound Lab & Beaker Styles */
+        @keyframes bubbleFloat {
+            0% { transform: translateY(0) scale(0.6); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(-90px) scale(1.2); opacity: 0; }
+        }
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.2));
+            animation: bubbleFloat 2.6s infinite ease-in;
+            pointer-events: none;
+        }
+        @keyframes liquidWave {
+            0%, 100% { border-radius: 14px 14px 28px 28px; }
+            50% { border-radius: 20px 10px 28px 28px; }
+        }
+        .liquid-wave {
+            animation: liquidWave 3s infinite ease-in-out;
+            transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease;
+        }
+        @keyframes beakerGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(16,185,129,0.35)); }
+            50% { filter: drop-shadow(0 0 25px rgba(16,185,129,0.7)); }
+        }
+        .beaker-glow {
+            animation: beakerGlow 2.5s infinite ease-in-out;
+        }
+        @keyframes reactionPop {
+            0% { transform: scale(0.9); opacity: 0.3; }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-reaction-pop {
+            animation: reactionPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .flask-drop-zone {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flask-drop-zone.drag-active {
+            border-color: #10b981 !important;
+            background: rgba(16, 185, 129, 0.15) !important;
+            box-shadow: 0 0 35px rgba(16, 185, 129, 0.4) inset !important;
+            transform: scale(1.02);
+        }
+        .recipe-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .recipe-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 min-h-screen text-gray-800 dark:text-gray-100 transition-colors duration-500">
@@ -277,7 +331,7 @@
                     <h1 id="main-title" class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent leading-tight">
                         Bảng Tuần Hoàn Hóa Học
                     </h1>
-                    <p id="sub-title" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">118 Nguyên tố • Tương tác</p>
+                    <p id="sub-title" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Nguyen Tran Huy Tien</p>
                 </div>
             </div>
 
@@ -290,7 +344,20 @@
             </div>
 
             <!-- Controls -->
-            <div class="flex items-center gap-3 order-2 md:order-3">
+            <div class="flex items-center gap-2 sm:gap-3 order-2 md:order-3">
+                <!-- Compound Builder Button -->
+                <button id="open-lab-btn" class="h-10 px-3 sm:px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 flex items-center gap-1.5 sm:gap-2 transition-all hover:scale-105 active:scale-95" title="Mở phòng thí nghiệm ghép hợp chất">
+                    <i class="fa-solid fa-flask-vial text-sm animate-pulse"></i>
+                    <span class="hidden sm:inline" data-i18n="lab_btn">Ghép Hợp Chất</span>
+                    <span id="header-beaker-badge" class="hidden px-1.5 py-0.5 bg-white text-emerald-700 rounded-full text-[10px] font-black leading-none">0</span>
+                </button>
+
+                <!-- Mini-Quiz Button -->
+                <button id="open-quiz-btn" class="h-10 px-3 sm:px-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-md shadow-amber-500/25 flex items-center gap-1.5 sm:gap-2 transition-all hover:scale-105 active:scale-95" title="Luyện tập trắc nghiệm Mini-Quiz">
+                    <i class="fa-solid fa-graduation-cap text-sm"></i>
+                    <span class="hidden sm:inline" data-i18n="quiz_btn">Luyện Tập Quiz</span>
+                </button>
+
                 <!-- Language Toggle -->
                 <div class="toggle-track" id="lang-toggle" title="Chuyển ngôn ngữ">
                     <div class="toggle-thumb">
@@ -465,6 +532,12 @@
                             <div class="text-xs sm:text-sm mt-1 leading-relaxed text-slate-700 dark:text-slate-300 font-normal" id="modal-desc"></div>
                         </div>
 
+                        <!-- Add to Lab Flask Button -->
+                        <button id="btn-modal-add-flask" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-98">
+                            <i class="fa-solid fa-flask-vial text-sm"></i>
+                            <span data-i18n="add_to_flask_btn">+ Cho vào bình phản ứng</span>
+                        </button>
+
                         <!-- Previous / Next Element quick navigation -->
                         <div class="flex items-center justify-between pt-1">
                             <button id="btn-prev-el" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-all">
@@ -495,7 +568,7 @@
                     </div>
                     <div>
                         <h2 class="text-xl font-bold" data-i18n="credits_title">Thành Viên Nhóm</h2>
-                        <p class="text-white/70 text-sm" data-i18n="credits_sub">Đội ngũ phát triển</p>
+                        <p class="text-white/70 text-sm" data-i18n="credits_sub">THPT Gia Dinh 2026-2029</p>
                     </div>
                 </div>
             </div>
@@ -522,6 +595,326 @@
             </div>
         </div>
     </div>
+
+    <!-- ========== COMPOUND BUILDER MODAL ========== -->
+    <div class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md" id="compound-modal">
+        <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col border border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-5 sm:px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white relative flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow">
+                        <i class="fa-solid fa-flask-vial text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base sm:text-xl font-black tracking-tight flex items-center gap-2" data-i18n="lab_title">
+                            Phòng Thí Nghiệm Ghép Hợp Chất
+                        </h2>
+                        <p class="text-white/80 text-[11px] sm:text-xs" data-i18n="lab_sub">
+                            Kéo thả các nguyên tố vào bình để kết hợp và tạo ra các hợp chất hóa học!
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-xs font-semibold">
+                        <i class="fa-solid fa-trophy text-amber-300"></i>
+                        <span data-i18n="discovered_label">Đã khám phá:</span>
+                        <span id="discovered-badge-count" class="font-bold text-white">0</span>/30
+                    </div>
+                    <button onclick="closeCompoundModal()" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all shadow" title="Đóng">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body (2 Columns) -->
+            <div class="p-4 sm:p-5 md:p-6 overflow-y-auto flex-1 space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                    <!-- LEFT: Reaction Beaker & Synthesis Zone (7 cols on lg) -->
+                    <div class="lg:col-span-7 flex flex-col space-y-4">
+                        
+                        <!-- Beaker Station Box -->
+                        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 relative overflow-hidden shadow-inner flex flex-col items-center">
+                            
+                            <!-- Station Header -->
+                            <div class="w-full flex items-center justify-between text-xs text-slate-300 mb-2">
+                                <span class="font-bold uppercase tracking-wider flex items-center gap-1.5 text-emerald-400">
+                                    <i class="fa-solid fa-vial-circle-check"></i>
+                                    <span data-i18n="flask_title">Bình Phản Ứng (Reaction Beaker)</span>
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <button id="btn-clear-flask" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-900/50 hover:text-rose-300 hover:border-rose-700/60 text-slate-400 text-[11px] font-semibold border border-slate-700/80 transition-all flex items-center gap-1" title="Làm sạch bình">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                        <span data-i18n="btn_clear">Làm sạch</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Beaker Container (Drop Target) -->
+                            <div id="flask-drop-zone" class="flask-drop-zone w-full max-w-[340px] h-[190px] rounded-3xl border-2 border-dashed border-emerald-500/40 bg-slate-900/60 relative flex flex-col justify-end items-center p-3 cursor-pointer overflow-hidden group">
+                                
+                                <!-- Beaker Markings -->
+                                <div class="absolute top-4 left-3 flex flex-col gap-2.5 pointer-events-none opacity-40">
+                                    <div class="w-4 h-[1.5px] bg-slate-400"></div>
+                                    <div class="w-6 h-[1.5px] bg-slate-400"></div>
+                                    <div class="w-4 h-[1.5px] bg-slate-400"></div>
+                                    <div class="w-6 h-[1.5px] bg-slate-400"></div>
+                                    <div class="w-4 h-[1.5px] bg-slate-400"></div>
+                                </div>
+
+                                <!-- Dynamic Liquid with Floating Bubbles -->
+                                <div id="flask-liquid" class="liquid-wave w-[95%] rounded-b-2xl absolute bottom-1.5 left-[2.5%] transition-all duration-500 flex items-center justify-center overflow-hidden" style="height: 25px; background: linear-gradient(180deg, rgba(16,185,129,0.3) 0%, rgba(5,150,105,0.6) 100%);">
+                                    <div class="bubble w-2.5 h-2.5 left-[20%] bottom-1" style="animation-delay: 0s;"></div>
+                                    <div class="bubble w-2 h-2 left-[45%] bottom-2" style="animation-delay: 0.8s;"></div>
+                                    <div class="bubble w-3 h-3 left-[70%] bottom-1" style="animation-delay: 1.5s;"></div>
+                                    <div class="bubble w-1.5 h-1.5 left-[85%] bottom-2" style="animation-delay: 2.1s;"></div>
+                                </div>
+
+                                <!-- Hint when empty -->
+                                <div id="flask-empty-hint" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center pointer-events-none transition-opacity">
+                                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-2 text-emerald-400 text-xl group-hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-arrow-down-long animate-bounce"></i>
+                                    </div>
+                                    <p class="text-xs font-semibold text-slate-300" data-i18n="flask_drop_hint">Kéo thả nguyên tố vào đây</p>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">hoặc click nguyên tố ở khay bên phải</p>
+                                </div>
+
+                                <!-- Elements Inside Flask Badges -->
+                                <div id="flask-elements-tray" class="relative z-10 w-full flex flex-wrap gap-1.5 items-center justify-center max-h-[110px] overflow-y-auto p-1">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Reaction Trigger & Formula Preview -->
+                            <div class="w-full mt-3 flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                                <div class="text-xs text-slate-300 font-mono flex items-center gap-1.5">
+                                    <span class="text-slate-400 text-[11px]">Hỗn hợp:</span>
+                                    <span id="flask-formula-summary" class="font-bold text-emerald-300 text-sm">--</span>
+                                </div>
+                                <button id="btn-do-react" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/30 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    <span data-i18n="btn_react">Phản ứng ngay!</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reaction Result Showcase Box -->
+                        <div id="reaction-result-box" class="bg-slate-900/90 rounded-2xl border border-slate-700/80 p-4 sm:p-5 relative transition-all">
+                            <!-- Dynamic Content Rendered by JS -->
+                            <div id="reaction-result-placeholder" class="text-center py-6 text-slate-400">
+                                <i class="fa-solid fa-atom text-3xl mb-2 text-slate-500 opacity-60"></i>
+                                <p class="text-xs font-medium" data-i18n="awaiting_reaction">Đang chờ phản ứng... Hãy cho các nguyên tố vào bình (Ví dụ: 2H + 1O)!</p>
+                            </div>
+                            <div id="reaction-result-card" class="hidden space-y-3">
+                                <!-- Filled by JS on success -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT: Element Shelf & Recipe Book (5 cols on lg) -->
+                    <div class="lg:col-span-5 flex flex-col space-y-3">
+                        
+                        <!-- Tabs -->
+                        <div class="flex items-center p-1 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+                            <button id="tab-btn-shelf" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-sm flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cubes text-emerald-500"></i>
+                                <span data-i18n="shelf_tab">Khay Nguyên Tố</span>
+                            </button>
+                            <button id="tab-btn-recipes" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-book-bookmark text-indigo-400"></i>
+                                <span data-i18n="recipes_tab">Sổ Tay Công Thức</span>
+                                <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">30</span>
+                            </button>
+                        </div>
+
+                        <!-- TAB 1: Element Shelf Container -->
+                        <div id="panel-shelf" class="space-y-3 flex-1 flex flex-col">
+                            <!-- Search & Quick Filters -->
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" id="shelf-search" placeholder="Tìm nguyên tố (H, O, Na, Fe...)"
+                                    class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all placeholder-gray-400">
+                            </div>
+
+                            <!-- Filter Chips -->
+                            <div class="flex flex-wrap gap-1 text-[11px]" id="shelf-filter-chips">
+                                <button class="shelf-filter active px-2.5 py-0.5 rounded-lg font-semibold bg-emerald-500 text-white" data-group="popular">Phổ biến</button>
+                                <button class="shelf-filter px-2.5 py-0.5 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200" data-group="all">Tất cả 118</button>
+                                <button class="shelf-filter px-2.5 py-0.5 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200" data-group="nm">Phi kim</button>
+                                <button class="shelf-filter px-2.5 py-0.5 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200" data-group="m">Kim loại</button>
+                            </div>
+
+                            <!-- Shelf Grid -->
+                            <div id="shelf-elements-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[380px] overflow-y-auto pr-1">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Recipe Book Container -->
+                        <div id="panel-recipes" class="hidden space-y-3 flex-1 flex flex-col">
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" id="recipe-search" placeholder="Tìm công thức (Nước, Muối, CO2...)"
+                                    class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all placeholder-gray-400">
+                            </div>
+
+                            <div id="recipes-list" class="space-y-2 max-h-[410px] overflow-y-auto pr-1">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MINI-QUIZ MODAL ========== -->
+    <div class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md" id="quiz-modal">
+        <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full border border-gray-200/80 dark:border-slate-700/80 overflow-hidden flex flex-col relative max-h-[92vh]">
+            
+            <!-- Confetti Canvas for Victory -->
+            <canvas id="quiz-confetti-canvas" class="absolute inset-0 pointer-events-none z-30 w-full h-full"></canvas>
+
+            <!-- Quiz Header -->
+            <div class="px-5 sm:px-6 py-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white relative flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow">
+                        <i class="fa-solid fa-graduation-cap text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base sm:text-xl font-black tracking-tight" data-i18n="quiz_title">
+                            Mini-Quiz Luyện Tập Hóa Học
+                        </h2>
+                        <p class="text-white/80 text-[11px] sm:text-xs" data-i18n="quiz_sub">
+                            Kiểm tra kiến thức về các nguyên tố hóa học!
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="closeQuizModal()" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all shadow" title="Đóng">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Content Container -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 flex flex-col justify-between space-y-4">
+
+                <!-- Category Filter Pills -->
+                <div class="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-gray-100 dark:border-slate-800 text-xs">
+                    <div class="flex flex-wrap gap-1" id="quiz-category-pills">
+                        <button class="quiz-cat-pill active px-3 py-1 rounded-lg font-semibold bg-amber-500 text-white transition-all text-xs" data-cat="all" data-i18n="quiz_cat_all">Tất cả</button>
+                        <button class="quiz-cat-pill px-3 py-1 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200 transition-all text-xs" data-cat="symbols" data-i18n="quiz_cat_symbols">Ký hiệu & Tên</button>
+                        <button class="quiz-cat-pill px-3 py-1 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200 transition-all text-xs" data-cat="position" data-i18n="quiz_cat_position">Vị trí & Nhóm</button>
+                        <button class="quiz-cat-pill px-3 py-1 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200 transition-all text-xs" data-cat="properties" data-i18n="quiz_cat_properties">Tính chất</button>
+                        <button class="quiz-cat-pill px-3 py-1 rounded-lg font-medium bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-gray-200 transition-all text-xs" data-cat="applications" data-i18n="quiz_cat_applications">Ứng dụng</button>
+                    </div>
+                    <div class="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400 font-mono text-xs ml-auto">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span data-i18n="quiz_score_label">Điểm số:</span>
+                        <span id="quiz-current-score" class="text-sm">0/0</span>
+                    </div>
+                </div>
+
+                <!-- PLAYING SCREEN -->
+                <div id="quiz-play-view" class="space-y-4 flex-1 flex flex-col justify-between">
+                    <div>
+                        <!-- Progress bar & Question number -->
+                        <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mb-1.5">
+                            <span class="font-bold text-slate-600 dark:text-slate-300 font-mono" id="quiz-question-counter">Câu 1 / 10</span>
+                            <span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold text-[11px]" id="quiz-question-category">Ký hiệu & Tên gọi</span>
+                        </div>
+                        <div class="w-full h-2 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden mb-4">
+                            <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" style="width: 10%;"></div>
+                        </div>
+
+                        <!-- Question Prompt -->
+                        <div class="bg-gray-50 dark:bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-slate-700/80 mb-4 shadow-sm">
+                            <h3 id="quiz-question-text" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-relaxed">
+                                Đang tải câu hỏi...
+                            </h3>
+                        </div>
+
+                        <!-- 4 Multiple Choice Options (A, B, C, D) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3" id="quiz-options-container">
+                            <!-- Injected dynamically by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Explanation Card (Hidden until an option is picked) -->
+                    <div id="quiz-explanation-box" class="hidden mt-3 p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-slate-800 dark:text-slate-200 transition-all">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5 shadow-sm">
+                                <i class="fa-solid fa-lightbulb"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5" data-i18n="quiz_explanation">
+                                    Giải thích:
+                                </div>
+                                <div id="quiz-explanation-text" class="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                    ...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Question Action Button -->
+                    <div class="pt-2 flex justify-end">
+                        <button id="quiz-next-btn" class="hidden px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/25 items-center gap-2 transition-all hover:scale-105 active:scale-95">
+                            <span id="quiz-next-btn-text" data-i18n="quiz_next_btn">Câu tiếp theo</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUMMARY SCREEN (Hidden until all questions done) -->
+                <div id="quiz-result-view" class="hidden text-center py-4 space-y-5 flex-1 flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-4xl shadow-xl shadow-amber-500/30 animate-bounce">
+                        <i id="quiz-result-trophy-icon" class="fa-solid fa-trophy"></i>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h3 id="quiz-result-title" class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                            🎉 Hoàn thành xuất sắc!
+                        </h3>
+                        <p id="quiz-result-subtitle" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            Bạn đã hoàn thành lượt luyện tập trắc nghiệm.
+                        </p>
+                    </div>
+
+                    <!-- Score Card Grid -->
+                    <div class="grid grid-cols-2 gap-3 max-w-xs w-full">
+                        <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700">
+                            <div class="text-[11px] font-bold text-slate-400" data-i18n="quiz_correct_count">Số câu đúng</div>
+                            <div class="text-2xl font-black text-emerald-500 mt-1" id="quiz-final-score">9 / 10</div>
+                        </div>
+                        <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700">
+                            <div class="text-[11px] font-bold text-slate-400" data-i18n="quiz_accuracy">Độ chính xác</div>
+                            <div class="text-2xl font-black text-amber-500 mt-1" id="quiz-final-percent">90%</div>
+                        </div>
+                    </div>
+
+                    <!-- Play Again Button -->
+                    <div class="pt-2 flex items-center justify-center gap-3">
+                        <button id="quiz-restart-btn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/25 flex items-center gap-2 transition-all hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span data-i18n="quiz_restart_btn">Chơi lại lượt mới</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Beaker Button (Always accessible) -->
+    <button id="fab-lab-btn" class="fixed bottom-6 right-6 z-[95] px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/30 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 border border-white/20" title="Mở phòng thí nghiệm ghép hợp chất">
+        <i class="fa-solid fa-flask-vial text-base animate-pulse"></i>
+        <span class="hidden sm:inline" data-i18n="lab_btn">Ghép Hợp Chất</span>
+        <span id="fab-beaker-count" class="px-2 py-0.5 bg-white text-emerald-700 rounded-full text-xs font-black shadow-sm">0</span>
+    </button>
 
     <!-- ========== FOOTER ========== -->
     <footer class="text-center py-6 text-xs text-gray-400 dark:text-gray-600">
@@ -920,6 +1313,35 @@ const i18n = {
         shells_label: 'Lớp electron (K, L, M, N...):',
         shells_summary_label: 'Phân bố theo lớp',
         prev_el: 'Trước', next_el: 'Sau',
+        lab_btn: 'Ghép Hợp Chất',
+        lab_title: 'Phòng Thí Nghiệm Ghép Hợp Chất',
+        lab_sub: 'Kéo thả các nguyên tố vào bình để kết hợp và tạo ra các hợp chất hóa học!',
+        flask_title: 'Bình Phản Ứng (Reaction Beaker)',
+        flask_drop_hint: 'Kéo thả nguyên tố vào đây',
+        btn_react: 'Phản ứng ngay!',
+        btn_clear: 'Làm sạch',
+        shelf_tab: 'Khay Nguyên Tố',
+        recipes_tab: 'Sổ Tay Công Thức',
+        discovered_label: 'Đã khám phá:',
+        awaiting_reaction: 'Đang chờ phản ứng... Hãy cho các nguyên tố vào bình (Ví dụ: 2H + 1O)!',
+        no_reaction_hint: 'Chưa tìm thấy hợp chất phù hợp với tỷ lệ này.',
+        add_to_flask_btn: '+ Cho vào bình phản ứng',
+        load_recipe: 'Cho vào bình',
+        quiz_btn: 'Luyện Tập Quiz',
+        quiz_title: 'Mini-Quiz Luyện Tập Hóa Học',
+        quiz_sub: 'Kiểm tra kiến thức về các nguyên tố hóa học!',
+        quiz_cat_all: 'Tất cả',
+        quiz_cat_symbols: 'Ký hiệu & Tên',
+        quiz_cat_position: 'Vị trí & Nhóm',
+        quiz_cat_properties: 'Tính chất',
+        quiz_cat_applications: 'Ứng dụng',
+        quiz_score_label: 'Điểm số:',
+        quiz_explanation: 'Giải thích:',
+        quiz_next_btn: 'Câu tiếp theo',
+        quiz_finish_btn: 'Xem kết quả',
+        quiz_restart_btn: 'Chơi lại lượt mới',
+        quiz_correct_count: 'Số câu đúng',
+        quiz_accuracy: 'Độ chính xác',
         credits_title: 'Thành Viên Nhóm', credits_sub: 'Đội ngũ phát triển',
         role_member: 'Thành viên',
         credits_footer: '© 2026 • Dự án Bảng Tuần Hoàn Tương Tác',
@@ -940,6 +1362,35 @@ const i18n = {
         shells_label: 'Electron Shells (K, L, M, N...):',
         shells_summary_label: 'Shell Distribution',
         prev_el: 'Prev', next_el: 'Next',
+        lab_btn: 'Compound Lab',
+        lab_title: 'Compound Builder Laboratory',
+        lab_sub: 'Drag and drop elements into the reaction flask to synthesize molecules!',
+        flask_title: 'Reaction Flask / Beaker',
+        flask_drop_hint: 'Drop elements here',
+        btn_react: 'React Now!',
+        btn_clear: 'Clear Flask',
+        shelf_tab: 'Element Shelf',
+        recipes_tab: 'Recipe Book',
+        discovered_label: 'Discovered:',
+        awaiting_reaction: 'Awaiting reaction... Add elements into the beaker (e.g. 2H + 1O)!',
+        no_reaction_hint: 'No known compound matches this ratio.',
+        add_to_flask_btn: '+ Add to Lab Flask',
+        load_recipe: 'Load to Flask',
+        quiz_btn: 'Mini-Quiz',
+        quiz_title: 'Chemistry Mini-Quiz',
+        quiz_sub: 'Test your knowledge of the chemical elements!',
+        quiz_cat_all: 'All',
+        quiz_cat_symbols: 'Symbols & Names',
+        quiz_cat_position: 'Positions & Groups',
+        quiz_cat_properties: 'Properties',
+        quiz_cat_applications: 'Applications',
+        quiz_score_label: 'Score:',
+        quiz_explanation: 'Explanation:',
+        quiz_next_btn: 'Next Question',
+        quiz_finish_btn: 'See Results',
+        quiz_restart_btn: 'Play Again',
+        quiz_correct_count: 'Correct Answers',
+        quiz_accuracy: 'Accuracy',
         credits_title: 'Team Members', credits_sub: 'Development Team',
         role_member: 'Member',
         credits_footer: '© 2026 • Interactive Periodic Table Project',
@@ -1005,6 +1456,1938 @@ const catGradients = {
     ln: 'linear-gradient(135deg, #db2777, #be185d)',
     ac: 'linear-gradient(135deg, #c026d3, #a21caf)'
 };
+
+// ============================================================
+// COMPOUND BUILDER DATABASE (30 Popular & Exciting Compounds)
+// ============================================================
+const compounds = [
+    {
+        formula: 'H₂O',
+        nameVi: 'Nước',
+        nameEn: 'Water',
+        catVi: 'Oxit • Phân tử của sự sống',
+        catEn: 'Oxide • Molecule of Life',
+        mass: '18.015 g/mol',
+        bondVi: 'Liên kết cộng hóa trị phân cực (góc 104.5°)',
+        bondEn: 'Polar Covalent Bond (104.5° angle)',
+        ingredients: { H: 2, O: 1 },
+        factsVi: [
+            'Nước bao phủ khoảng 71% bề mặt Trái Đất và chiếm ~60% trọng lượng cơ thể người.',
+            'Nước nở ra khi đóng băng thay vì co lại, giúp băng nổi và tạo lớp cách nhiệt bảo vệ sinh vật dưới đáy sông hồ vào mùa đông.',
+            'Góc liên kết H-O-H là 104.5°, tạo nên tính lưỡng cực mạnh mẽ giúp nước hòa tan nhiều chất nhất trong tự nhiên.'
+        ],
+        factsEn: [
+            'Water covers 71% of Earth\'s surface and makes up about 60% of an adult human body.',
+            'Water expands as it freezes, so ice floats on top and insulates aquatic life during cold winters.',
+            'The H-O-H bond angle of 104.5° creates a permanent dipole, making it the universal solvent.'
+        ],
+        color: '#06b6d4',
+        model: 'h2o'
+    },
+    {
+        formula: 'NaCl',
+        nameVi: 'Natri clorua (Muối ăn)',
+        nameEn: 'Sodium Chloride (Table Salt)',
+        catVi: 'Muối khoáng vô cơ',
+        catEn: 'Inorganic Mineral Salt',
+        mass: '58.44 g/mol',
+        bondVi: 'Liên kết ion (Na⁺ và Cl⁻)',
+        bondEn: 'Ionic Bond (Na⁺ and Cl⁻)',
+        ingredients: { Na: 1, Cl: 1 },
+        factsVi: [
+            'Được tạo từ kim loại Natri (nổ khi gặp nước) và khí Clo (cực độc), nhưng kết hợp lại thành muối ăn thiết yếu nuôi sống con người.',
+            'Vào thời La Mã, muối từng quý hơn vàng và được dùng trả lương cho lính; từ "salary" bắt nguồn từ chữ "sal" (muối).',
+            'Ion Na⁺ và Cl⁻ đóng vai trò sinh tử trong việc duy trì áp suất thẩm thấu và truyền xung điện thần kinh trong não.'
+        ],
+        factsEn: [
+            'Formed from violent sodium and toxic chlorine gas, yet creates the mineral essential to animal life.',
+            'In ancient Rome, soldiers were partially paid in salt; the word "salary" originates from the Latin "sal".',
+            'Na⁺ and Cl⁻ ions are vital for nerve impulse transmission and osmotic balance.'
+        ],
+        color: '#a855f7',
+        model: 'nacl'
+    },
+    {
+        formula: 'CO₂',
+        nameVi: 'Cacbon đioxit (Khí cacbonic)',
+        nameEn: 'Carbon Dioxide',
+        catVi: 'Oxit axit • Khí nhà kính',
+        catEn: 'Acidic Oxide • Greenhouse Gas',
+        mass: '44.01 g/mol',
+        bondVi: 'Liên kết cộng hóa trị đôi không phân cực (O=C=O, 180°)',
+        bondEn: 'Double Covalent Bond (Linear 180°)',
+        ingredients: { C: 1, O: 2 },
+        factsVi: [
+            'Nguyên liệu không thể thiếu cho cây xanh quang hợp để nhả ra oxy và tổng hợp tinh bột nuôi sống muôn loài.',
+            'Ở thể rắn dưới -78.5°C, CO₂ được gọi là "đá khô", thăng hoa trực tiếp thành khói lạnh mà không hề làm ướt bề mặt.',
+            'Tạo ra bọt sủi sảng khoái và vị cay nhẹ trong nước ngọt có gas và bia.'
+        ],
+        factsEn: [
+            'Essential feedstock for plant photosynthesis, producing the oxygen we breathe.',
+            'Solid CO₂ (-78.5°C) is known as "dry ice", sublimating directly into gas without melting.',
+            'Provides effervescence and carbonation in sparkling drinks and sodas.'
+        ],
+        color: '#64748b',
+        model: 'co2'
+    },
+    {
+        formula: 'CH₄',
+        nameVi: 'Metan (Khí bùn ao / Khí tự nhiên)',
+        nameEn: 'Methane (Natural Gas)',
+        catVi: 'Hiđrocacbon (Ankan)',
+        catEn: 'Hydrocarbon (Alkane)',
+        mass: '16.04 g/mol',
+        bondVi: 'Liên kết cộng hóa trị đơn (Tứ diện đều 109.5°)',
+        bondEn: 'Covalent Single Bonds (Tetrahedral 109.5°)',
+        ingredients: { C: 1, H: 4 },
+        factsVi: [
+            'Thành phần chính của khí thiên nhiên và khí sinh học (Biogas), là nguồn năng lượng đốt sạch hiệu suất cao.',
+            'Là khí nhà kính có khả năng giữ nhiệt mạnh gấp 28 lần CO₂ trong chu kỳ 100 năm.',
+            'Kính viễn vọng không gian đã phát hiện cả những hồ chứa metan lỏng khổng lồ trên mặt trăng Titan của Sao Thổ.'
+        ],
+        factsEn: [
+            'Major constituent of natural gas and biogas, burning cleanly with high energy output.',
+            'Methane has 28 times the global warming potential of CO₂ over a 100-year timescale.',
+            'Huge lakes of liquid methane have been discovered on Saturn\'s largest moon, Titan.'
+        ],
+        color: '#f59e0b',
+        model: 'ch4'
+    },
+    {
+        formula: 'NH₃',
+        nameVi: 'Amoniac',
+        nameEn: 'Ammonia',
+        catVi: 'Bazơ vô cơ yếu',
+        catEn: 'Inorganic Weak Base',
+        mass: '17.03 g/mol',
+        bondVi: 'Liên kết cộng hóa trị (Hình chóp tam giác 107°)',
+        bondEn: 'Covalent Bonds (Trigonal Pyramidal 107°)',
+        ingredients: { N: 1, H: 3 },
+        factsVi: [
+            'Hơn 80% amoniac sản xuất trên thế giới được dùng làm phân đạm hóa học, giúp nuôi sống gần một nửa dân số Trái Đất.',
+            'Quy trình Haber-Bosch tổng hợp NH₃ từ không khí (năm 1909) được coi là một trong những phát minh quan trọng nhất lịch sử loài người.',
+            'Khí amoniac cực kỳ háo nước: 1 lít nước có thể hòa tan tới 700 lít khí NH₃ ở nhiệt độ phòng.'
+        ],
+        factsEn: [
+            'Over 80% of global ammonia is used in fertilizers, sustaining global food supplies.',
+            'The Haber-Bosch synthesis process invented in 1909 is considered a pivotal milestone in human history.',
+            'Extremely soluble in water: 1 liter of water dissolves roughly 700 liters of NH₃ gas.'
+        ],
+        color: '#3b82f6',
+        model: 'nh3'
+    },
+    {
+        formula: 'HCl',
+        nameVi: 'Axit clohiđric',
+        nameEn: 'Hydrochloric Acid',
+        catVi: 'Axit vô cơ mạnh',
+        catEn: 'Strong Inorganic Acid',
+        mass: '36.46 g/mol',
+        bondVi: 'Liên kết cộng hóa trị phân cực',
+        bondEn: 'Polar Covalent Bond',
+        ingredients: { H: 1, Cl: 1 },
+        factsVi: [
+            'Thành phần tự nhiên trong dịch vị dạ dày người (pH 1.5 - 2.0) giúp tiêu hóa thức ăn và diệt vi khuẩn có hại.',
+            'Dạ dày tự bảo vệ mình khỏi bị axit này ăn mòn nhờ một lớp niêm mạc nhầy được tái tạo liên tục.',
+            'Được dùng nhiều trong công nghiệp luyện kim để tẩy gỉ thép và tinh chế quặng khoáng.'
+        ],
+        factsEn: [
+            'Found naturally in human stomach gastric acid (pH 1.5 - 2.0) to digest proteins and neutralize pathogens.',
+            'The stomach wall avoids dissolving itself thanks to a constantly regenerating protective mucus barrier.',
+            'Widely used in steel pickling and industrial refining.'
+        ],
+        color: '#ef4444',
+        model: 'hcl'
+    },
+    {
+        formula: 'H₂SO₄',
+        nameVi: 'Axit sunfuric',
+        nameEn: 'Sulfuric Acid',
+        catVi: 'Axit mạnh đa chức',
+        catEn: 'Strong Polyprotic Acid',
+        mass: '98.08 g/mol',
+        bondVi: 'Liên kết cộng hóa trị',
+        bondEn: 'Covalent Bonds',
+        ingredients: { H: 2, S: 1, O: 4 },
+        factsVi: [
+            'Được mệnh danh là "Vua của các hóa chất" - lượng tiêu thụ H₂SO₄ từng là thước đo sức mạnh công nghiệp quốc gia.',
+            'Có tính háo nước cực kỳ dữ dội; có thể than hóa đường trắng C₁₂H₂₂O₁₁ thành một cột than đen cuồn cuộn trong vài giây.',
+            'Là chất điện phân chính trong bình ắc quy xe máy và xe hơi.'
+        ],
+        factsEn: [
+            'Known as the "King of Chemicals" — sulfuric acid consumption was historically an index of industrial might.',
+            'Powerfully dehydrates carbohydrates, turning sugar into a steaming column of carbon in seconds.',
+            'Acts as the electrolyte in lead-acid automotive batteries.'
+        ],
+        color: '#eab308',
+        model: 'h2so4'
+    },
+    {
+        formula: 'NaOH',
+        nameVi: 'Natri hiđroxit (Xút ăn da)',
+        nameEn: 'Sodium Hydroxide (Lye / Caustic Soda)',
+        catVi: 'Bazơ kiềm mạnh',
+        catEn: 'Strong Alkaline Base',
+        mass: '40.00 g/mol',
+        bondVi: 'Liên kết ion (Na⁺) và cộng hóa trị (OH⁻)',
+        bondEn: 'Ionic and Covalent Bonds',
+        ingredients: { Na: 1, O: 1, H: 1 },
+        factsVi: [
+            'Thành phần cổ xưa nhất để xà phòng hóa dầu mỡ động thực vật thành bánh xà phòng thơm tho.',
+            'Ăn mòn mỡ và protein cực nhanh, do đó là thành phần chính trong các viên thông cống siêu tốc.',
+            'Khi hòa tan vào nước giải phóng lượng nhiệt rất lớn.'
+        ],
+        factsEn: [
+            'The foundational reagent for saponifying fats and oils into soap.',
+            'Rapidly dissolves organic matter and grease, making it the active ingredient in heavy-duty drain openers.',
+            'Dissolution in water is strongly exothermic.'
+        ],
+        color: '#10b981',
+        model: 'naoh'
+    },
+    {
+        formula: 'CaCO₃',
+        nameVi: 'Canxi cacbonat (Đá vôi / Cẩm thạch)',
+        nameEn: 'Calcium Carbonate (Limestone)',
+        catVi: 'Muối cacbonat kết tủa',
+        catEn: 'Inorganic Carbonate',
+        mass: '100.09 g/mol',
+        bondVi: 'Liên kết ion (Ca²⁺ và CO₃²⁻)',
+        bondEn: 'Ionic Bond (Ca²⁺ and CO₃²⁻)',
+        ingredients: { Ca: 1, C: 1, O: 3 },
+        factsVi: [
+            'Thành phần chính của đá vôi, đá cẩm thạch (marble), vỏ sò, vỏ ốc, vỏ trứng gà và các rạn san hô kỳ vĩ.',
+            'Tạo nên cảnh quan hang động thạch nhũ tráng lệ như Vịnh Hạ Long, Phong Nha - Kẻ Bàng và Sơn Đoòng.',
+            'Được nghiền mịn để làm phấn viết bảng học sinh và làm bột trét tường xây dựng.'
+        ],
+        factsEn: [
+            'Major component of limestone, marble, seashells, eggshells, and marine coral reefs.',
+            'Forms stalactites and stalagmites in majestic karst cave formations over millennia.',
+            'Processed into blackboard chalk and dietary calcium supplements.'
+        ],
+        color: '#cbd5e1',
+        model: 'caco3'
+    },
+    {
+        formula: 'Fe₂O₃',
+        nameVi: 'Sắt(III) oxit (Rỉ sắt / Quặng Hematit)',
+        nameEn: 'Iron(III) Oxide (Rust)',
+        catVi: 'Oxit bazơ kim loại',
+        catEn: 'Transition Metal Oxide',
+        mass: '159.69 g/mol',
+        bondVi: 'Liên kết ion',
+        bondEn: 'Ionic Bond',
+        ingredients: { Fe: 2, O: 3 },
+        factsVi: [
+            'Chất này phủ kín bề mặt Sao Hỏa, tạo ra màu đỏ cam rực rỡ khiến nó được gọi là "Hành tinh Đỏ".',
+            'Hình thành tự nhiên khi sắt bị ăn mòn bởi oxy và hơi nước trong khí quyển.',
+            'Khoáng vật hematit của nó được dùng làm bột màu nâu đỏ trong đồ gốm mỹ nghệ và son môi từ thời cổ xưa.'
+        ],
+        factsEn: [
+            'Covers the surface of Mars, giving the Red Planet its iconic rust-colored hue.',
+            'Formed spontaneously when iron oxidizes in the presence of atmospheric moisture.',
+            'Used as a non-toxic mineral pigment (ochre/hematite) since prehistoric times.'
+        ],
+        color: '#dc2626',
+        model: 'fe2o3'
+    },
+    {
+        formula: 'C₆H₁₂O₆',
+        nameVi: 'Glucozơ (Đường nho)',
+        nameEn: 'Glucose (Grape Sugar)',
+        catVi: 'Đường đơn (Monosaccarit)',
+        catEn: 'Simple Sugar (Monosaccharide)',
+        mass: '180.16 g/mol',
+        bondVi: 'Liên kết cộng hóa trị mạch vòng',
+        bondEn: 'Cyclic Covalent Structure',
+        ingredients: { C: 6, H: 12, O: 6 },
+        factsVi: [
+            'Đồng tiền năng lượng tối thượng của sinh học: nuôi sống mọi tế bào trong cơ thể người và động vật.',
+            'Não người chỉ chiếm 2% khối lượng cơ thể nhưng tiêu thụ tới 20% tổng lượng glucose hàng ngày.',
+            'Sản phẩm kỳ diệu của quá trình quang hợp cây xanh từ ánh sáng Mặt Trời, khí CO₂ và nước.'
+        ],
+        factsEn: [
+            'The primary energy source for cellular respiration in living organisms.',
+            'The human brain weighs only 2% of body mass but consumes roughly 20% of resting glucose.',
+            'Synthesized directly by plants through sunlight, carbon dioxide, and water.'
+        ],
+        color: '#f97316',
+        model: 'glucose'
+    },
+    {
+        formula: 'C₂H₅OH',
+        nameVi: 'Etanol (Cồn Etylic)',
+        nameEn: 'Ethanol (Ethyl Alcohol)',
+        catVi: 'Ancol no đơn chức',
+        catEn: 'Aliphatic Alcohol',
+        mass: '46.07 g/mol',
+        bondVi: 'Liên kết cộng hóa trị có nhóm -OH',
+        bondEn: 'Covalent with Hydroxyl Group',
+        ingredients: { C: 2, H: 6, O: 1 },
+        factsVi: [
+            'Thành phần cồn trong rượu vang, bia và cồn y tế 70° (nồng độ diệt khuẩn và virus tối ưu nhất).',
+            'Được pha vào xăng làm nhiên liệu sinh học E5 và E10 giúp giảm khí thải ô nhiễm môi trường.',
+            'Con người đã biết sản xuất etanol qua lên men nho và ngũ cốc từ hơn 9.000 năm trước.'
+        ],
+        factsEn: [
+            'The alcohol found in beverages and 70% medical disinfectants (optimal for penetrating bacterial walls).',
+            'Blended into gasoline as biofuel E5/E10 to curb greenhouse gas emissions.',
+            'Fermentation of ethanol dates back over 9,000 years in early human civilization.'
+        ],
+        color: '#ec4899',
+        model: 'ethanol'
+    },
+    {
+        formula: 'H₂O₂',
+        nameVi: 'Hiđro peoxit (Nước oxy già)',
+        nameEn: 'Hydrogen Peroxide',
+        catVi: 'Peoxit vô cơ',
+        catEn: 'Inorganic Peroxide',
+        mass: '34.01 g/mol',
+        bondVi: 'Liên kết cộng hóa trị (chứa cầu peoxit -O-O-)',
+        bondEn: 'Peroxide Linkage (-O-O-)',
+        ingredients: { H: 2, O: 2 },
+        factsVi: [
+            'Sủi bọt trắng xóa khi bôi lên vết thương do enzym catalase trong máu lập tức phân giải nó thành nước và khí oxy.',
+            'Chất tẩy trắng sinh thái không để lại cặn độc hại, dùng trong dệt may và làm sáng màu tóc.',
+            'Ở nồng độ cao (85-98%), nó từng được dùng làm nhiên liệu đẩy cho tên lửa máy bay phản lực.'
+        ],
+        factsEn: [
+            'Fizzes vigorously on cuts because blood catalase enzyme breaks it down into water and pure oxygen gas.',
+            'An eco-friendly bleach leaving only water and oxygen as byproducts.',
+            'Concentrated formulations serve as rocket propellant oxidizers.'
+        ],
+        color: '#0284c7',
+        model: 'h2o2'
+    },
+    {
+        formula: 'O₂',
+        nameVi: 'Khí Oxi',
+        nameEn: 'Oxygen Gas',
+        catVi: 'Đơn chất khí duy trì sự sống',
+        catEn: 'Diatomic Gas of Life',
+        mass: '32.00 g/mol',
+        bondVi: 'Liên kết cộng hóa trị đôi (O=O)',
+        bondEn: 'Double Covalent Bond (O=O)',
+        ingredients: { O: 2 },
+        factsVi: [
+            'Chiếm 21% thể tích khí quyển, là chất duy trì sự hô hấp hiếu khí và sự cháy trên Trái Đất.',
+            'Ở trạng thái lỏng (-183°C), oxy có màu xanh lam nhạt tuyệt đẹp và bị nam châm hút (thuận từ).',
+            'Được tái tạo liên tục nhờ vi sinh vật phù du đại dương và rừng cây qua quang hợp.'
+        ],
+        factsEn: [
+            'Comprises 21% of Earth\'s atmosphere, sustaining aerobic cellular respiration and combustion.',
+            'Liquid oxygen (-183°C) has a pale sky-blue color and exhibits paramagnetism.',
+            'Maintained continually by ocean phytoplankton and terrestrial plant photosynthesis.'
+        ],
+        color: '#38bdf8',
+        model: 'o2'
+    },
+    {
+        formula: 'O₃',
+        nameVi: 'Khí Ozon',
+        nameEn: 'Ozone Gas',
+        catVi: 'Dạng thù hình của oxy',
+        catEn: 'Allotrope of Oxygen',
+        mass: '48.00 g/mol',
+        bondVi: 'Liên kết cộng hóa trị cộng hưởng (góc 117°)',
+        bondEn: 'Resonant Covalent Bond (117° angle)',
+        ingredients: { O: 3 },
+        factsVi: [
+            'Tầng ozon ở độ cao 20-30 km là "chiếc khiên" vô giá hấp thụ tia cực tím UV nguy hiểm từ Mặt Trời.',
+            'Tạo ra mùi tanh ngai ngái tươi mát trong không khí sau những cơn dông có sấm sét.',
+            'Có tính sát khuẩn cực mạnh, được các nhà máy nước tinh khiết dùng để diệt khuẩn triệt để.'
+        ],
+        factsEn: [
+            'The stratospheric ozone layer shields terrestrial life by absorbing dangerous solar ultraviolet UV rays.',
+            'Produces the distinct, sharp, clean scent in the air following lightning storms.',
+            'A potent disinfectant used widely in municipal drinking water purification plants.'
+        ],
+        color: '#0284c7',
+        model: 'o3'
+    },
+    {
+        formula: 'SiO₂',
+        nameVi: 'Silic đioxit (Cát / Thạch anh)',
+        nameEn: 'Silicon Dioxide (Silica / Quartz)',
+        catVi: 'Oxit tinh thể nguyên tử',
+        catEn: 'Network Covalent Solid',
+        mass: '60.08 g/mol',
+        bondVi: 'Mạng lưới cộng hóa trị tứ diện bền vững',
+        bondEn: 'Tetrahedral Network Covalent',
+        ingredients: { Si: 1, O: 2 },
+        factsVi: [
+            'Nguyên liệu để nấu chảy thành thủy tinh trong suốt ở nhiệt độ trên 1700°C.',
+            'Tinh thể thạch anh dao động với tần số cực kỳ chính xác khi có điện áp, là nhịp đập của mọi đồng hồ và vi xử lý.',
+            'Chiếm hơn 59% khối lượng vỏ Trái Đất dưới dạng cát bãi biển và các loại khoáng vật đá.'
+        ],
+        factsEn: [
+            'The raw material melted into glass at temperatures above 1,700°C.',
+            'Quartz crystals oscillate with phenomenal precision under electric potential, driving clocks and microchips.',
+            'Makes up over 59% of the Earth\'s crust as beach sand and silicate minerals.'
+        ],
+        color: '#94a3b8',
+        model: 'sio2'
+    },
+    {
+        formula: 'NaHCO₃',
+        nameVi: 'Natri hiđrocacbonat (Baking Soda)',
+        nameEn: 'Sodium Bicarbonate (Baking Soda)',
+        catVi: 'Muối axit vô cơ',
+        catEn: 'Inorganic Acid Salt',
+        mass: '84.01 g/mol',
+        bondVi: 'Liên kết ion và cộng hóa trị',
+        bondEn: 'Ionic and Covalent',
+        ingredients: { Na: 1, H: 1, C: 1, O: 3 },
+        factsVi: [
+            'Bí quyết làm bánh nở xốp: phản ứng với axit sinh bọt khí CO₂ nâng phồng bột bánh khi nướng.',
+            'Dùng làm dịu cơn ợ chua dạ dày, khử mùi hôi tủ lạnh và làm trắng răng an toàn.',
+            'Chất dập lửa hiệu quả trong các bình chữa cháy bột xách tay.'
+        ],
+        factsEn: [
+            'Baking leavening agent: reacts with acids to produce CO₂ bubbles that make cakes fluffy.',
+            'Acts as an antacid, refrigerator deodorizer, and gentle cleaning abrasive.',
+            'Key extinguishing powder in dry-chemical fire extinguishers.'
+        ],
+        color: '#f8fafc',
+        model: 'nahco3'
+    },
+    {
+        formula: 'CaO',
+        nameVi: 'Canxi oxit (Vôi sống)',
+        nameEn: 'Calcium Oxide (Quicklime)',
+        catVi: 'Oxit bazơ kiềm thổ',
+        catEn: 'Basic Alkaline Oxide',
+        mass: '56.08 g/mol',
+        bondVi: 'Liên kết ion (Ca²⁺ và O²⁻)',
+        bondEn: 'Ionic Bond (Ca²⁺ and O²⁻)',
+        ingredients: { Ca: 1, O: 1 },
+        factsVi: [
+            'Phản ứng với nước tỏa nhiệt cực mạnh ("tôi vôi"), có thể làm nước sôi sùng sục và bốc khói mù mịt.',
+            'Từng được người Byzantine cổ dùng làm vũ khí thiêu cháy thuyền địch ("Lửa Hy Lạp").',
+            'Dùng để rắc khử chua đất phèn nông nghiệp và xử lý hồ nuôi tôm cá.'
+        ],
+        factsEn: [
+            'Reacts violently with water (slaking), generating enough heat to boil water vigorously.',
+            'Was an ingredient in ancient Greek fire weapons used in naval warfare.',
+            'Extensively used to neutralize acidic soil in agriculture.'
+        ],
+        color: '#e2e8f0',
+        model: 'cao'
+    },
+    {
+        formula: 'CuSO₄',
+        nameVi: 'Đồng(II) sunfat (Phèn xanh)',
+        nameEn: 'Copper(II) Sulfate',
+        catVi: 'Muối sunfat kim loại chuyển tiếp',
+        catEn: 'Transition Metal Sulfate',
+        mass: '159.61 g/mol',
+        bondVi: 'Liên kết ion',
+        bondEn: 'Ionic Bond',
+        ingredients: { Cu: 1, S: 1, O: 4 },
+        factsVi: [
+            'Khi ngậm nước, nó tạo thành tinh thể CuSO₄·5H₂O có màu xanh dương lam ngọc đẹp mê hoặc.',
+            'Thành phần dung dịch Boóc-đô nổi tiếng trị bệnh nấm mốc cho vườn nho và cây ăn trái khắp thế giới.',
+            'Khi sấy mất hết nước sẽ biến thành bột màu trắng tinh, rất nhạy để phát hiện hơi ẩm.'
+        ],
+        factsEn: [
+            'Hydrates into CuSO₄·5H₂O with gorgeous sapphire-blue crystals.',
+            'Active fungicide in the historic Bordeaux mixture protecting vineyards worldwide.',
+            'Anhydrous white powder turns blue upon contact with water, making it a classic test for moisture.'
+        ],
+        color: '#2563eb',
+        model: 'cuso4'
+    },
+    {
+        formula: 'CH₃COOH',
+        nameVi: 'Axit axetic (Giấm ăn)',
+        nameEn: 'Acetic Acid (Vinegar)',
+        catVi: 'Axit hữu cơ cacboxylic',
+        catEn: 'Carboxylic Organic Acid',
+        mass: '60.05 g/mol',
+        bondVi: 'Liên kết cộng hóa trị có nhóm -COOH',
+        bondEn: 'Covalent with -COOH Group',
+        ingredients: { C: 2, H: 4, O: 2 },
+        factsVi: [
+            'Giấm ăn quen thuộc trong bữa ăn gia đình là dung dịch axit axetic loãng khoảng 3-5%.',
+            'Được phát hiện từ thời cổ đại khi rượu vang để ngoài không khí bị vi khuẩn lên men chua.',
+            'Hòa tan các mảng bám cặn vôi canxi trong ấm siêu tốc một cách nhẹ nhàng và an toàn.'
+        ],
+        factsEn: [
+            'Culinary vinegar is a dilute 3-5% aqueous solution of acetic acid.',
+            'Known since antiquity when wine spoiled into sour vinegar via airborne acetic bacteria.',
+            'Easily dissolves calcium mineral limescale in electric kettles and coffee makers.'
+        ],
+        color: '#facc15',
+        model: 'ch3cooh'
+    },
+    {
+        formula: 'N₂',
+        nameVi: 'Khí Nitơ',
+        nameEn: 'Nitrogen Gas',
+        catVi: 'Đơn chất khí trơ',
+        catEn: 'Diatomic Inert Gas',
+        mass: '28.01 g/mol',
+        bondVi: 'Liên kết ba siêu bền (N≡N)',
+        bondEn: 'Triple Covalent Bond (N≡N)',
+        ingredients: { N: 2 },
+        factsVi: [
+            'Chiếm tới 78% thể tích bầu khí quyển Trái Đất chúng ta đang hít thở.',
+            'Liên kết ba N≡N rất khó bị bẻ gãy, giúp khí nitơ cực kỳ trơ và không duy trì sự cháy.',
+            'Được bơm vào các gói snack khoai tây chiên để chống oxy hóa dầu và giữ bánh luôn giòn tan.'
+        ],
+        factsEn: [
+            'Makes up 78% of Earth\'s atmosphere by volume.',
+            'The triple bond N≡N is one of the strongest chemical bonds known, rendering nitrogen chemically inert at room temperature.',
+            'Used to inflate potato chip bags to prevent lipid rancidity and keep chips crisp.'
+        ],
+        color: '#60a5fa',
+        model: 'n2'
+    },
+    {
+        formula: 'H₂',
+        nameVi: 'Khí Hiđro',
+        nameEn: 'Hydrogen Gas',
+        catVi: 'Đơn chất khí nhẹ nhất vũ trụ',
+        catEn: 'Lightest Elemental Gas',
+        mass: '2.016 g/mol',
+        bondVi: 'Liên kết cộng hóa trị đơn (H-H)',
+        bondEn: 'Single Covalent Bond (H-H)',
+        ingredients: { H: 2 },
+        factsVi: [
+            'Phân tử nhẹ nhất và phổ biến nhất, chiếm hơn 75% tổng khối lượng vật chất thông thường trong vũ trụ.',
+            'Nhiên liệu xanh của tương lai: khi cháy trong động cơ hydro chỉ thải ra nước tinh khiết (H₂O).',
+            'Nhiên liệu phản ứng nhiệt hạch cung cấp ánh sáng và nhiệt lượng cho Mặt Trời suốt 5 tỷ năm qua.'
+        ],
+        factsEn: [
+            'The lightest and most abundant molecule, accounting for over 75% of baryonic mass in the universe.',
+            'Zero-emission green fuel: reacts with oxygen to produce only clean water.',
+            'Powers thermonuclear fusion in the core of our Sun and stars.'
+        ],
+        color: '#93c5fd',
+        model: 'h2'
+    },
+    {
+        formula: 'CO',
+        nameVi: 'Cacbon monoxit',
+        nameEn: 'Carbon Monoxide',
+        catVi: 'Oxit trung tính cực độc',
+        catEn: 'Toxic Neutral Oxide',
+        mass: '28.01 g/mol',
+        bondVi: 'Liên kết ba (C≡O)',
+        bondEn: 'Triple Bond (C≡O)',
+        ingredients: { C: 1, O: 1 },
+        factsVi: [
+            'Khí "sát thủ thầm lặng" không màu, không mùi, sinh ra khi đốt than củi hoặc xăng dầu thiếu oxy.',
+            'Gắn kết chặt với huyết sắc tố hemoglobin trong máu gấp 200 lần so với oxy, khiến cơ thể bị ngạt từ bên trong.'
+        ],
+        factsEn: [
+            'The "silent killer" — colorless, odorless gas produced by incomplete combustion of hydrocarbons.',
+            'Binds to hemoglobin with an affinity 200 times higher than oxygen, starving tissues of oxygen.'
+        ],
+        color: '#475569',
+        model: 'co'
+    },
+    {
+        formula: 'HNO₃',
+        nameVi: 'Axit nitric',
+        nameEn: 'Nitric Acid',
+        catVi: 'Axit vô cơ oxy hóa mạnh',
+        catEn: 'Strong Oxidizing Acid',
+        mass: '63.01 g/mol',
+        bondVi: 'Liên kết cộng hóa trị',
+        bondEn: 'Covalent Bonds',
+        ingredients: { H: 1, N: 1, O: 3 },
+        factsVi: [
+            'Khi pha với axit HCl tỉ lệ 1:3 sẽ tạo thành "Nước cường toan" (Aqua Regia) có thể hòa tan cả Vàng ròng.',
+            'Nguyên liệu then chốt sản xuất phân đạm và các loại thuốc nổ công nghiệp.'
+        ],
+        factsEn: [
+            'Mixed 1:3 with HCl to make "Aqua Regia" (Royal Water), capable of dissolving pure Gold and Platinum.',
+            'Vital precursor for industrial fertilizers and explosives.'
+        ],
+        color: '#f97316',
+        model: 'hno3'
+    },
+    {
+        formula: 'Al₂O₃',
+        nameVi: 'Nhôm oxit (Đá Sapphire & Ruby)',
+        nameEn: 'Aluminium Oxide (Corundum)',
+        catVi: 'Oxit lưỡng tính • Đá quý',
+        catEn: 'Amphoteric Oxide • Gemstone',
+        mass: '101.96 g/mol',
+        bondVi: 'Liên kết ion rất bền',
+        bondEn: 'Robust Ionic Lattice',
+        ingredients: { Al: 2, O: 3 },
+        factsVi: [
+            'Khoáng vật Corundum tự nhiên của nó chính là hai loại đá quý đắt giá: Sapphire (xanh) và Ruby (đỏ).',
+            'Độ cứng 9 trên thang Mohs, chỉ xếp sau kim cương, dùng làm mặt kính đồng hồ cao cấp chống trầy.',
+            'Tạo lớp màng oxit tự nhiên siêu mỏng bảo vệ nồi chảo nhôm không bao giờ bị rỉ sét.'
+        ],
+        factsEn: [
+            'Its mineral form, corundum, constitutes natural Rubies (red) and Sapphires (blue).',
+            'Boasts a Mohs hardness of 9, second only to diamond; used in scratch-resistant watch crystals.',
+            'Forms an ultra-thin passivation layer on aluminum surfaces protecting them from oxidation.'
+        ],
+        color: '#ec4899',
+        model: 'al2o3'
+    },
+    {
+        formula: 'AgCl',
+        nameVi: 'Bạc clorua',
+        nameEn: 'Silver Chloride',
+        catVi: 'Muối kết tủa nhạy sáng',
+        catEn: 'Photosensitive Insoluble Salt',
+        mass: '143.32 g/mol',
+        bondVi: 'Liên kết ion',
+        bondEn: 'Ionic Bond',
+        ingredients: { Ag: 1, Cl: 1 },
+        factsVi: [
+            'Hóa chất nhạy sáng lịch sử khai sinh ra toàn bộ ngành nhiếp ảnh phim trắng đen cổ điển.',
+            'Kết tủa màu trắng sữa sẽ hóa tím đen khi để ngoài ánh nắng do bạc bị khử thành hạt nano bạc kim loại.'
+        ],
+        factsEn: [
+            'The historical photosensitive foundation of black-and-white analog photography.',
+            'White precipitate darkens rapidly in sunlight as silver ions reduce to microscopic silver metal grains.'
+        ],
+        color: '#e2e8f0',
+        model: 'agcl'
+    },
+    {
+        formula: 'KNO₃',
+        nameVi: 'Kali nitrat (Diêm tiêu)',
+        nameEn: 'Potassium Nitrate (Saltpeter)',
+        catVi: 'Muối nitrat oxy hóa',
+        catEn: 'Oxidizing Nitrate Salt',
+        mass: '101.10 g/mol',
+        bondVi: 'Liên kết ion (K⁺ và NO₃⁻)',
+        bondEn: 'Ionic Bond (K⁺ and NO₃⁻)',
+        ingredients: { K: 1, N: 1, O: 3 },
+        factsVi: [
+            'Một trong ba thành phần bí mật tạo nên thuốc súng đen cổ truyền phát minh ở phương Đông cổ đại.',
+            'Cung cấp cả Kali và Nitơ giúp cây trồng ra hoa to, trái ngọt và tăng sức đề kháng sâu bệnh.'
+        ],
+        factsEn: [
+            'Key oxidizing component of historic black gunpowder developed in ancient China.',
+            'Provides both potassium and nitrogen nutrients for crops to enhance fruiting.'
+        ],
+        color: '#a855f7',
+        model: 'kno3'
+    },
+    {
+        formula: 'MgO',
+        nameVi: 'Magiê oxit (Magnesia)',
+        nameEn: 'Magnesium Oxide',
+        catVi: 'Oxit bazơ chịu nhiệt siêu cao',
+        catEn: 'Refractory Basic Oxide',
+        mass: '40.30 g/mol',
+        bondVi: 'Liên kết ion',
+        bondEn: 'Ionic Bond',
+        ingredients: { Mg: 1, O: 1 },
+        factsVi: [
+            'Điểm nóng chảy lên tới 2.852°C, được dùng đóng gạch chịu lửa lót trong lò luyện thép rực lửa.',
+            'Bột trắng các vận động viên thể dục dụng cụ và cử tạ bôi lên tay để hút mồ hôi và tăng độ bám.'
+        ],
+        factsEn: [
+            'Exceptional melting point of 2,852°C, lining refractory furnaces in industrial metallurgy.',
+            'White powder used by gymnasts, rock climbers, and weightlifters to absorb palm sweat and boost grip.'
+        ],
+        color: '#f1f5f9',
+        model: 'mgo'
+    },
+    {
+        formula: 'TiO₂',
+        nameVi: 'Titan đioxit',
+        nameEn: 'Titanium Dioxide',
+        catVi: 'Oxit kim loại tán xạ ánh sáng',
+        catEn: 'Light-scattering Oxide',
+        mass: '79.87 g/mol',
+        bondVi: 'Liên kết cộng hóa trị - ion',
+        bondEn: 'Covalent/Ionic Lattice',
+        ingredients: { Ti: 1, O: 2 },
+        factsVi: [
+            'Chất tạo màu trắng đục có chỉ số khúc xạ ánh sáng cao nhất thế giới, làm trắng sơn tường và kem đánh răng.',
+            'Thành phần chống nắng vật lý phản xạ hoàn toàn tia UV bảo vệ làn da khỏi lão hóa và bỏng rát.'
+        ],
+        factsEn: [
+            'The highest refractive index pigment, providing brilliant whiteness in paint and toothpaste.',
+            'Physical sunscreen filter reflecting both UVA and UVB radiation without skin irritation.'
+        ],
+        color: '#f8fafc',
+        model: 'tio2'
+    },
+    {
+        formula: 'C₃H₈',
+        nameVi: 'Propan (Khí gas dân dụng)',
+        nameEn: 'Propane',
+        catVi: 'Khí dầu mỏ hóa lỏng (LPG)',
+        catEn: 'Liquefied Petroleum Gas',
+        mass: '44.10 g/mol',
+        bondVi: 'Liên kết cộng hóa trị mạch thẳng (C-C, C-H)',
+        bondEn: 'Aliphatic Covalent Bonds',
+        ingredients: { C: 3, H: 8 },
+        factsVi: [
+            'Thành phần chính trong các bình gas đun nấu gia đình và bình gas dã ngoại.',
+            'Bản chất khí propan không mùi, nhà sản xuất cố tình thêm chất tạo mùi hôi để con người phát hiện ngay nếu rò rỉ khí gas.'
+        ],
+        factsEn: [
+            'Major fuel in household cooking gas tanks and camping stoves.',
+            'Naturally odorless; manufacturers intentionally add odorant ethyl mercaptan so leaks can be detected instantly.'
+        ],
+        color: '#ea580c',
+        model: 'c3h8'
+    }
+];
+
+// ============================================================
+// COMPOUND BUILDER STATE & LOGIC
+// ============================================================
+let flaskElements = {};
+let discoveredCompounds = new Set();
+try {
+    const saved = localStorage.getItem('pt-discovered');
+    if (saved) discoveredCompounds = new Set(JSON.parse(saved));
+} catch (e) {}
+
+// Sound synthesis using Web Audio API
+const audioCtx = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext))
+    ? new (window.AudioContext || window.webkitAudioContext)()
+    : null;
+
+function playSound(type) {
+    if (!audioCtx) return;
+    try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        if (type === 'bubble') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(680, now + 0.12);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.13);
+        } else if (type === 'success') {
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.36);
+            });
+        } else if (type === 'clear') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.14);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+        } else if (type === 'quiz_correct') {
+            const notes = [587.33, 880];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.24);
+            });
+        } else if (type === 'quiz_wrong') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.linearRampToValueAtTime(110, now + 0.22);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.23);
+        } else if (type === 'quiz_victory') {
+            const fanfare = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+            fanfare.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                gain.gain.setValueAtTime(0.25, now + idx * 0.09);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.45);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + idx * 0.09);
+                osc.stop(now + idx * 0.09 + 0.46);
+            });
+        }
+    } catch (e) {}
+}
+
+function addToFlask(symbol, count = 1) {
+    if (!flaskElements[symbol]) flaskElements[symbol] = 0;
+    flaskElements[symbol] += count;
+    playSound('bubble');
+    renderFlask();
+    synthesizeCompound(true); // check if matches
+}
+
+function removeFromFlask(symbol, count = 1) {
+    if (flaskElements[symbol]) {
+        flaskElements[symbol] -= count;
+        if (flaskElements[symbol] <= 0) delete flaskElements[symbol];
+        renderFlask();
+        synthesizeCompound(true);
+    }
+}
+
+function clearFlask() {
+    flaskElements = {};
+    playSound('clear');
+    renderFlask();
+    resetReactionResult();
+}
+
+function renderFlask() {
+    const tray = document.getElementById('flask-elements-tray');
+    const emptyHint = document.getElementById('flask-empty-hint');
+    const liquid = document.getElementById('flask-liquid');
+    const summary = document.getElementById('flask-formula-summary');
+    const reactBtn = document.getElementById('btn-do-react');
+    const headerBadge = document.getElementById('header-beaker-badge');
+    const fabCount = document.getElementById('fab-beaker-count');
+
+    if (!tray) return;
+    tray.innerHTML = '';
+    const keys = Object.keys(flaskElements);
+    let totalCount = 0;
+
+    keys.forEach(sym => {
+        const qty = flaskElements[sym];
+        totalCount += qty;
+        const chip = document.createElement('div');
+        chip.className = 'px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-white flex items-center gap-1.5 shadow select-none';
+        chip.innerHTML = `
+            <span class="text-emerald-400 font-black">${sym}</span>
+            <span class="text-[11px] text-slate-300">×${qty}</span>
+            <div class="flex items-center gap-0.5 ml-1">
+                <button class="w-4 h-4 rounded bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-[9px] text-slate-300" onclick="removeFromFlask('${sym}', 1)">-</button>
+                <button class="w-4 h-4 rounded bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-[9px] text-slate-300" onclick="addToFlask('${sym}', 1)">+</button>
+            </div>
+            <button class="ml-0.5 text-slate-400 hover:text-rose-400 text-[10px]" onclick="removeFromFlask('${sym}', 999)">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        tray.appendChild(chip);
+    });
+
+    if (totalCount === 0) {
+        emptyHint.classList.remove('opacity-0');
+        emptyHint.classList.add('opacity-100');
+        liquid.style.height = '24px';
+        liquid.style.background = 'linear-gradient(180deg, rgba(16,185,129,0.3) 0%, rgba(5,150,105,0.6) 100%)';
+        summary.textContent = '--';
+        reactBtn.disabled = true;
+        if (headerBadge) headerBadge.classList.add('hidden');
+        if (fabCount) fabCount.textContent = '0';
+    } else {
+        emptyHint.classList.remove('opacity-100');
+        emptyHint.classList.add('opacity-0');
+        const h = Math.min(130, 28 + totalCount * 12);
+        liquid.style.height = `${h}px`;
+        summary.innerHTML = keys.map(k => `<span class="text-white">${k}</span><sub>${flaskElements[k]}</sub>`).join(' + ');
+        reactBtn.disabled = false;
+        if (headerBadge) {
+            headerBadge.textContent = totalCount;
+            headerBadge.classList.remove('hidden');
+        }
+        if (fabCount) fabCount.textContent = totalCount;
+    }
+}
+
+function matchesRecipe(flask, recipe) {
+    const fKeys = Object.keys(flask).filter(k => flask[k] > 0);
+    const rKeys = Object.keys(recipe);
+    if (fKeys.length !== rKeys.length) return false;
+    return rKeys.every(k => flask[k] === recipe[k]);
+}
+
+function synthesizeCompound(isAuto = false) {
+    const matched = compounds.find(c => matchesRecipe(flaskElements, c.ingredients));
+    const resultBox = document.getElementById('reaction-result-box');
+    const placeholder = document.getElementById('reaction-result-placeholder');
+    const card = document.getElementById('reaction-result-card');
+
+    if (!resultBox) return;
+
+    if (matched) {
+        discoveredCompounds.add(matched.formula);
+        try {
+            localStorage.setItem('pt-discovered', JSON.stringify([...discoveredCompounds]));
+        } catch (e) {}
+
+        playSound('success');
+        resultBox.classList.remove('reaction-flash');
+        void resultBox.offsetWidth; // trigger reflow
+        resultBox.classList.add('reaction-flash');
+
+        placeholder.classList.add('hidden');
+        card.classList.remove('hidden');
+
+        const isVi = currentLang === 'vi';
+        const name = isVi ? matched.nameVi : matched.nameEn;
+        const cat = isVi ? matched.catVi : matched.catEn;
+        const bond = isVi ? matched.bondVi : matched.bondEn;
+        const facts = isVi ? matched.factsVi : matched.factsEn;
+
+        card.innerHTML = `
+            <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-700/80">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl sm:text-4xl font-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+                        ${matched.formula}
+                    </span>
+                    <div>
+                        <div class="text-base sm:text-lg font-bold text-white leading-tight">${name}</div>
+                        <div class="text-xs text-emerald-400 font-semibold">${cat}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold border border-emerald-500/30">
+                        ${matched.mass}
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-semibold border border-cyan-500/30">
+                        ${bond}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Molecular Model Canvas -->
+            <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800 flex flex-col items-center justify-center relative">
+                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-nodes text-indigo-400"></i>
+                    <span>Cấu trúc phân tử (Molecular Structure)</span>
+                </div>
+                <canvas id="molecule-canvas" width="340" height="150" class="max-w-full"></canvas>
+            </div>
+
+            <!-- Fun Facts & Information -->
+            <div class="space-y-1.5 pt-1">
+                <div class="text-[11px] uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Thông tin thú vị & Ứng dụng thực tế:</span>
+                </div>
+                <ul class="space-y-1 text-xs text-slate-300 leading-relaxed pl-1">
+                    ${facts.map(f => `<li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-1 text-[10px]"></i><span>${f}</span></li>`).join('')}
+                </ul>
+            </div>
+        `;
+
+        drawMolecule(matched, document.getElementById('molecule-canvas'));
+        updateDiscoveredCount();
+        renderRecipes();
+    } else {
+        if (!isAuto) {
+            placeholder.classList.remove('hidden');
+            card.classList.add('hidden');
+            placeholder.innerHTML = `
+                <div class="text-amber-400 mb-1">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <p class="text-xs font-semibold text-amber-200" data-i18n="no_reaction_hint">Chưa tìm thấy hợp chất phù hợp với tỷ lệ này.</p>
+                <p class="text-[11px] text-slate-400 mt-1">Hãy thử thêm/bớt số lượng hoặc xem công thức mẫu trong tab "Sổ Tay Công Thức"!</p>
+            `;
+        }
+    }
+}
+
+function resetReactionResult() {
+    const placeholder = document.getElementById('reaction-result-placeholder');
+    const card = document.getElementById('reaction-result-card');
+    if (!placeholder || !card) return;
+    placeholder.classList.remove('hidden');
+    card.classList.add('hidden');
+    placeholder.innerHTML = `
+        <i class="fa-solid fa-atom text-3xl mb-2 text-slate-500 opacity-60"></i>
+        <p class="text-xs font-medium" data-i18n="awaiting_reaction">Đang chờ phản ứng... Hãy cho các nguyên tố vào bình (Ví dụ: 2H + 1O)!</p>
+    `;
+}
+
+function updateDiscoveredCount() {
+    const badge = document.getElementById('discovered-badge-count');
+    if (badge) badge.textContent = discoveredCompounds.size;
+}
+
+// 2D Ball-and-Stick Molecule Canvas Renderer
+function drawMolecule(compound, canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const cpkColors = {
+        H: { fill: '#ffffff', stroke: '#94a3b8', text: '#0f172a', r: 14 },
+        C: { fill: '#334155', stroke: '#1e293b', text: '#f8fafc', r: 20 },
+        N: { fill: '#3b82f6', stroke: '#1d4ed8', text: '#ffffff', r: 19 },
+        O: { fill: '#ef4444', stroke: '#b91c1c', text: '#ffffff', r: 19 },
+        Na: { fill: '#a855f7', stroke: '#7e22ce', text: '#ffffff', r: 18 },
+        Cl: { fill: '#10b981', stroke: '#047857', text: '#ffffff', r: 21 },
+        S: { fill: '#eab308', stroke: '#ca8a04', text: '#0f172a', r: 20 },
+        Ca: { fill: '#94a3b8', stroke: '#64748b', text: '#0f172a', r: 22 },
+        Fe: { fill: '#f97316', stroke: '#c2410c', text: '#ffffff', r: 21 },
+        Cu: { fill: '#06b6d4', stroke: '#0891b2', text: '#ffffff', r: 20 },
+        Al: { fill: '#ec4899', stroke: '#be185d', text: '#ffffff', r: 19 },
+        Si: { fill: '#64748b', stroke: '#475569', text: '#ffffff', r: 20 },
+        Ti: { fill: '#94a3b8', stroke: '#64748b', text: '#0f172a', r: 21 },
+        K: { fill: '#8b5cf6', stroke: '#6d28d9', text: '#ffffff', r: 21 },
+        Mg: { fill: '#14b8a6', stroke: '#0d9488', text: '#ffffff', r: 19 },
+        Ag: { fill: '#cbd5e1', stroke: '#94a3b8', text: '#0f172a', r: 20 }
+    };
+
+    function drawAtom(x, y, sym, labelOverride) {
+        const conf = cpkColors[sym] || { fill: '#6366f1', stroke: '#4f46e5', text: '#fff', r: 18 };
+        ctx.beginPath();
+        ctx.arc(x, y, conf.r, 0, Math.PI * 2);
+        ctx.fillStyle = conf.fill;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = conf.stroke;
+        ctx.stroke();
+
+        ctx.fillStyle = conf.text;
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labelOverride || sym, x, y);
+    }
+
+    function drawBond(x1, y1, x2, y2, isDouble = false) {
+        ctx.strokeStyle = '#64748b';
+        ctx.lineCap = 'round';
+        if (isDouble) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.hypot(dx, dy);
+            const nx = (-dy / len) * 3.5;
+            const ny = (dx / len) * 3.5;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x1 + nx, y1 + ny);
+            ctx.lineTo(x2 + nx, y2 + ny);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x1 - nx, y1 - ny);
+            ctx.lineTo(x2 - nx, y2 - ny);
+            ctx.stroke();
+        } else {
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+    }
+
+    const cx = w / 2;
+    const cy = h / 2;
+
+    if (compound.model === 'h2o') {
+        const ox = cx, oy = cy - 12;
+        const h1x = cx - 55, h1y = cy + 32;
+        const h2x = cx + 55, h2y = cy + 32;
+        drawBond(ox, oy, h1x, h1y);
+        drawBond(ox, oy, h2x, h2y);
+        drawAtom(ox, oy, 'O');
+        drawAtom(h1x, h1y, 'H');
+        drawAtom(h2x, h2y, 'H');
+    } else if (compound.model === 'co2') {
+        const c1x = cx - 75, c1y = cy;
+        const c2x = cx + 75, c2y = cy;
+        drawBond(cx, cy, c1x, c1y, true);
+        drawBond(cx, cy, c2x, c2y, true);
+        drawAtom(c1x, c1y, 'O');
+        drawAtom(c2x, c2y, 'O');
+        drawAtom(cx, cy, 'C');
+    } else if (compound.model === 'nacl') {
+        const nax = cx - 45, nay = cy;
+        const clx = cx + 45, cly = cy;
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#c084fc';
+        ctx.beginPath();
+        ctx.moveTo(nax, nay);
+        ctx.lineTo(clx, cly);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawAtom(nax, nay, 'Na', 'Na⁺');
+        drawAtom(clx, cly, 'Cl', 'Cl⁻');
+    } else if (compound.model === 'ch4') {
+        const hTop = { x: cx, y: cy - 48 };
+        const hLeft = { x: cx - 58, y: cy + 35 };
+        const hRight = { x: cx + 58, y: cy + 35 };
+        const hCenter = { x: cx - 12, y: cy + 42 };
+        drawBond(cx, cy, hTop.x, hTop.y);
+        drawBond(cx, cy, hLeft.x, hLeft.y);
+        drawBond(cx, cy, hRight.x, hRight.y);
+        drawBond(cx, cy, hCenter.x, hCenter.y);
+        drawAtom(cx, cy, 'C');
+        drawAtom(hTop.x, hTop.y, 'H');
+        drawAtom(hLeft.x, hLeft.y, 'H');
+        drawAtom(hRight.x, hRight.y, 'H');
+        drawAtom(hCenter.x, hCenter.y, 'H');
+    } else {
+        const keys = Object.keys(compound.ingredients);
+        const atomList = [];
+        keys.forEach(k => {
+            for (let i = 0; i < compound.ingredients[k]; i++) atomList.push(k);
+        });
+
+        const count = Math.min(atomList.length, 8);
+        const r = Math.min(55, 30 + count * 4);
+        const coords = [];
+        for (let i = 0; i < count; i++) {
+            const angle = (2 * Math.PI * i) / count;
+            coords.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, sym: atomList[i] });
+        }
+        for (let i = 0; i < count; i++) {
+            const next = (i + 1) % count;
+            drawBond(coords[i].x, coords[i].y, coords[next].x, coords[next].y);
+        }
+        coords.forEach(c => drawAtom(c.x, c.y, c.sym));
+    }
+}
+
+// Modal open/close
+function openCompoundModal() {
+    const modal = document.getElementById('compound-modal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    renderShelf();
+    renderRecipes();
+    renderFlask();
+    updateDiscoveredCount();
+}
+
+function closeCompoundModal() {
+    document.getElementById('compound-modal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Shelf rendering
+let currentShelfGroup = 'popular';
+const popularElements = ['H', 'C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Ti', 'Fe', 'Cu', 'Ag'];
+
+function renderShelf() {
+    const grid = document.getElementById('shelf-elements-grid');
+    if (!grid) return;
+    const searchVal = document.getElementById('shelf-search').value.trim().toLowerCase();
+    grid.innerHTML = '';
+
+    let list = elements;
+    if (currentShelfGroup === 'popular') {
+        list = elements.filter(e => popularElements.includes(e.s));
+    } else if (currentShelfGroup === 'nm') {
+        list = elements.filter(e => ['nm', 'hl', 'ng'].includes(e.cat));
+    } else if (currentShelfGroup === 'm') {
+        list = elements.filter(e => ['am', 'ae', 'tm', 'pt'].includes(e.cat));
+    }
+
+    if (searchVal) {
+        list = elements.filter(e =>
+            e.s.toLowerCase().includes(searchVal) ||
+            e.vi.toLowerCase().includes(searchVal) ||
+            e.en.toLowerCase().includes(searchVal)
+        );
+    }
+
+    list.forEach(el => {
+        const item = document.createElement('div');
+        const inFlask = flaskElements[el.s] || 0;
+        item.className = `el-cell cat-${el.cat} p-1.5 flex flex-col items-center justify-center rounded-xl cursor-grab active:cursor-grabbing border border-slate-700/60 transition-all hover:scale-110 active:scale-95 shadow-sm relative select-none`;
+        item.draggable = true;
+        item.innerHTML = `
+            <span class="text-[9px] font-bold opacity-75 leading-none">${el.n}</span>
+            <span class="text-base font-extrabold leading-tight">${el.s}</span>
+            <span class="text-[8px] font-medium leading-none opacity-85 truncate max-w-full">${currentLang === 'vi' ? el.vi : el.en}</span>
+            ${inFlask > 0 ? `<span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow">${inFlask}</span>` : ''}
+        `;
+
+        item.addEventListener('click', () => {
+            addToFlask(el.s, 1);
+            renderShelf();
+        });
+
+        item.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', el.s);
+            e.dataTransfer.effectAllowed = 'copy';
+        });
+
+        grid.appendChild(item);
+    });
+}
+
+// Recipe book rendering
+function renderRecipes() {
+    const listContainer = document.getElementById('recipes-list');
+    if (!listContainer) return;
+    const query = document.getElementById('recipe-search').value.trim().toLowerCase();
+    listContainer.innerHTML = '';
+
+    const filtered = compounds.filter(c => {
+        if (!query) return true;
+        return c.formula.toLowerCase().includes(query) ||
+               c.nameVi.toLowerCase().includes(query) ||
+               c.nameEn.toLowerCase().includes(query);
+    });
+
+    filtered.forEach(c => {
+        const isDiscovered = discoveredCompounds.has(c.formula);
+        const card = document.createElement('div');
+        card.className = `recipe-card p-3 rounded-xl border flex items-center justify-between gap-3 ${
+            isDiscovered
+                ? 'bg-emerald-950/20 border-emerald-500/40 dark:bg-emerald-950/30'
+                : 'bg-white dark:bg-slate-800/80 border-gray-200 dark:border-slate-700'
+        }`;
+
+        const ingText = Object.keys(c.ingredients).map(k => `${c.ingredients[k]}×${k}`).join(' + ');
+
+        card.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl ${isDiscovered ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'} flex items-center justify-center font-black text-sm">
+                    ${isDiscovered ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-flask"></i>'}
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-black text-base ${isDiscovered ? 'text-emerald-400' : 'text-slate-800 dark:text-white'}">${c.formula}</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">• ${currentLang === 'vi' ? c.nameVi : c.nameEn}</span>
+                    </div>
+                    <div class="text-[11px] font-mono text-slate-400 mt-0.5">
+                        Công thức: <span class="font-bold text-emerald-400">${ingText}</span>
+                    </div>
+                </div>
+            </div>
+            <button class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 flex-shrink-0" title="Cho nguyên liệu vào bình">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span data-i18n="load_recipe">Cho vào bình</span>
+            </button>
+        `;
+
+        card.querySelector('button').addEventListener('click', () => {
+            clearFlask();
+            Object.keys(c.ingredients).forEach(k => {
+                addToFlask(k, c.ingredients[k]);
+            });
+            renderShelf();
+        });
+
+        listContainer.appendChild(card);
+    });
+}
+
+function setupDragAndDrop() {
+    const dropZone = document.getElementById('flask-drop-zone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            dropZone.classList.add('drag-active');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-active');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            const symbol = e.dataTransfer.getData('text/plain');
+            if (symbol) {
+                addToFlask(symbol, 1);
+                renderShelf();
+            }
+        });
+    }
+
+    const fab = document.getElementById('fab-lab-btn');
+    if (fab) {
+        fab.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            fab.classList.add('scale-110', 'ring-4', 'ring-emerald-400');
+        });
+        fab.addEventListener('dragleave', () => {
+            fab.classList.remove('scale-110', 'ring-4', 'ring-emerald-400');
+        });
+        fab.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fab.classList.remove('scale-110', 'ring-4', 'ring-emerald-400');
+            const symbol = e.dataTransfer.getData('text/plain');
+            if (symbol) {
+                addToFlask(symbol, 1);
+                openCompoundModal();
+            }
+        });
+    }
+}
+
+// ============================================================
+// MINI-QUIZ DATABASE (35 High-Yield Chemistry Questions)
+// Categories: symbols, position, properties, applications
+// ============================================================
+const quizQuestions = [
+    // --- 1. Ký hiệu & Tên gọi (symbols) ---
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của nguyên tố Vàng (Gold) là gì?',
+        qEn: 'What is the chemical symbol for Gold?',
+        optionsVi: ['Ag', 'Au', 'Al', 'Fe'],
+        optionsEn: ['Ag', 'Au', 'Al', 'Fe'],
+        correct: 1,
+        explainVi: 'Au bắt nguồn từ chữ Latin "Aurum", nghĩa là rạng đông lấp lánh. Ag là Bạc, Al là Nhôm, Fe là Sắt.',
+        explainEn: 'Au originates from the Latin word "Aurum", meaning glowing dawn. Ag is Silver, Al is Aluminium, Fe is Iron.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của nguyên tố Bạc (Silver) là gì?',
+        qEn: 'What is the chemical symbol for Silver?',
+        optionsVi: ['Ag', 'Au', 'Si', 'Ba'],
+        optionsEn: ['Ag', 'Au', 'Si', 'Ba'],
+        correct: 0,
+        explainVi: 'Ag bắt nguồn từ chữ Latin "Argentum", kim loại có độ dẫn điện và phản xạ ánh sáng tốt nhất.',
+        explainEn: 'Ag comes from the Latin "Argentum". Silver possesses the highest electrical conductivity of all metals.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Sắt (Iron) là gì?',
+        qEn: 'What is the chemical symbol for Iron?',
+        optionsVi: ['Ir', 'Sn', 'Fe', 'F'],
+        optionsEn: ['Ir', 'Sn', 'Fe', 'F'],
+        correct: 2,
+        explainVi: 'Fe bắt nguồn từ tiếng Latin "Ferrum". Ir là Iridi, Sn là Thiếc, F là Flo.',
+        explainEn: 'Fe comes from the Latin "Ferrum". Ir is Iridium, Sn is Tin, F is Fluorine.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Thủy ngân (Mercury) là gì?',
+        qEn: 'What is the chemical symbol for Mercury?',
+        optionsVi: ['Mg', 'Mn', 'Hg', 'Mc'],
+        optionsEn: ['Mg', 'Mn', 'Hg', 'Mc'],
+        correct: 2,
+        explainVi: 'Hg bắt nguồn từ chữ Hy Lạp "Hydrargyrum" nghĩa là "bạc lỏng". Mg là Magiê, Mn là Mangan.',
+        explainEn: 'Hg originates from the Greek "Hydrargyrum", meaning "liquid silver". Mg is Magnesium, Mn is Manganese.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Chì (Lead) là gì?',
+        qEn: 'What is the chemical symbol for Lead?',
+        optionsVi: ['Pb', 'Pl', 'Po', 'Pd'],
+        optionsEn: ['Pb', 'Pl', 'Po', 'Pd'],
+        correct: 0,
+        explainVi: 'Pb bắt nguồn từ tiếng Latin "Plumbum". Từ "plumber" (thợ ống nước) bắt nguồn từ việc La Mã dùng ống chì dẫn nước.',
+        explainEn: 'Pb comes from Latin "Plumbum". The English word "plumber" derives from Roman lead water pipes.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Đồng (Copper) là gì?',
+        qEn: 'What is the chemical symbol for Copper?',
+        optionsVi: ['Co', 'Cr', 'Cu', 'Ca'],
+        optionsEn: ['Co', 'Cr', 'Cu', 'Ca'],
+        correct: 2,
+        explainVi: 'Cu bắt nguồn từ chữ Latin "Cuprum" (đảo Síp / Cyprus, nơi khai thác đồng thời cổ đại). Co là Coban, Cr là Crom, Ca là Canxi.',
+        explainEn: 'Cu comes from Latin "Cuprum", named after the island of Cyprus. Co is Cobalt, Cr is Chromium, Ca is Calcium.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Kali (Potassium) là gì?',
+        qEn: 'What is the chemical symbol for Potassium?',
+        optionsVi: ['P', 'K', 'Ka', 'Pt'],
+        optionsEn: ['P', 'K', 'Ka', 'Pt'],
+        correct: 1,
+        explainVi: 'K bắt nguồn từ tên Tân Latin "Kalium". Ký hiệu P là Phốtpho, Pt là Bạch kim (Platin).',
+        explainEn: 'K comes from the Neo-Latin name "Kalium". Symbol P stands for Phosphorus, Pt for Platinum.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Natri (Sodium) là gì?',
+        qEn: 'What is the chemical symbol for Sodium?',
+        optionsVi: ['S', 'So', 'Na', 'N'],
+        optionsEn: ['S', 'So', 'Na', 'N'],
+        correct: 2,
+        explainVi: 'Na bắt nguồn từ chữ Latin "Natrium". Ký hiệu S là Lưu huỳnh (Sulfur), N là Nitơ.',
+        explainEn: 'Na comes from the Latin "Natrium". S stands for Sulfur, N for Nitrogen.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Ký hiệu hóa học của Thiếc (Tin) là gì?',
+        qEn: 'What is the chemical symbol for Tin?',
+        optionsVi: ['Ti', 'Th', 'Sn', 'Sb'],
+        optionsEn: ['Ti', 'Th', 'Sn', 'Sb'],
+        correct: 2,
+        explainVi: 'Sn bắt nguồn từ tiếng Latin "Stannum". Ti là Titan, Th là Thori, Sb là Antimon.',
+        explainEn: 'Sn originates from Latin "Stannum". Ti is Titanium, Th is Thorium, Sb is Antimony.'
+    },
+    {
+        cat: 'symbols',
+        qVi: 'Nguyên tố có ký hiệu hóa học chữ "W" là nguyên tố nào?',
+        qEn: 'Which chemical element is represented by the symbol "W"?',
+        optionsVi: ['Wolfram (Vonfram)', 'Vanadi', 'Xenon', 'Ytri'],
+        optionsEn: ['Tungsten (Wolfram)', 'Vanadium', 'Xenon', 'Yttrium'],
+        correct: 0,
+        explainVi: 'W là chữ cái đầu của Wolfram (Vonfram), kim loại chịu nhiệt độ nóng chảy cao kỷ lục 3.422°C.',
+        explainEn: 'W represents Wolfram (Tungsten), boasting an extreme melting point of 3,422°C.'
+    },
+
+    // --- 2. Vị trí & Nhóm (position) ---
+    {
+        cat: 'position',
+        qVi: 'Nhóm các Khí hiếm (Noble gases) nằm ở cột nào trong bảng tuần hoàn?',
+        qEn: 'Which group do the Noble gases belong to in the periodic table?',
+        optionsVi: ['Nhóm 1 (IA)', 'Nhóm 2 (IIA)', 'Nhóm 17 (VIIA)', 'Nhóm 18 (VIIIA)'],
+        optionsEn: ['Group 1 (IA)', 'Group 2 (IIA)', 'Group 17 (VIIA)', 'Group 18 (VIIIA)'],
+        correct: 3,
+        explainVi: 'Nhóm 18 gồm He, Ne, Ar, Kr, Xe, Rn có lớp vỏ electron ngoài cùng bão hòa, cực kỳ bền vững và trơ hóa học.',
+        explainEn: 'Group 18 elements have full valence electron shells, rendering them exceptionally stable and chemically inert.'
+    },
+    {
+        cat: 'position',
+        qVi: 'Các kim loại kiềm (Alkali metals) nằm ở nhóm nào trong bảng tuần hoàn?',
+        qEn: 'Which group contains the Alkali metals?',
+        optionsVi: ['Nhóm 1', 'Nhóm 2', 'Nhóm 7', 'Nhóm 11'],
+        optionsEn: ['Group 1', 'Group 2', 'Group 7', 'Group 11'],
+        correct: 0,
+        explainVi: 'Kim loại kiềm (Li, Na, K, Rb, Cs, Fr) nằm ở nhóm 1, có 1 electron lớp ngoài cùng và phản ứng mãnh liệt với nước.',
+        explainEn: 'Alkali metals occupy Group 1 (except Hydrogen); each has 1 valence electron and reacts vigorously with water.'
+    },
+    {
+        cat: 'position',
+        qVi: 'Nhóm Halogen ("chất sinh muối") gồm F, Cl, Br, I nằm ở nhóm nào?',
+        qEn: 'Which group do the Halogens (F, Cl, Br, I, At) belong to?',
+        optionsVi: ['Nhóm 15', 'Nhóm 16', 'Nhóm 17', 'Nhóm 18'],
+        optionsEn: ['Group 15', 'Group 16', 'Group 17', 'Group 18'],
+        correct: 2,
+        explainVi: 'Nhóm 17 gồm các Halogen có 7 electron hóa trị, có tính oxi hóa rất mạnh và dễ dàng tạo muối khi phản ứng với kim loại.',
+        explainEn: 'Group 17 contains the Halogens with 7 valence electrons, highly reactive nonmetals that readily form salts.'
+    },
+    {
+        cat: 'position',
+        qVi: 'Bảng tuần hoàn hóa học tiêu chuẩn hiện nay có bao nhiêu chu kỳ (hàng ngang)?',
+        qEn: 'How many periods (horizontal rows) are there in the standard periodic table?',
+        optionsVi: ['6 chu kỳ', '7 chu kỳ', '8 chu kỳ', '18 chu kỳ'],
+        optionsEn: ['6 periods', '7 periods', '8 periods', '18 periods'],
+        correct: 1,
+        explainVi: 'Bảng tuần hoàn có đúng 7 chu kỳ, tương ứng với số lớp electron từ 1 đến 7 của các nguyên tử.',
+        explainEn: 'The standard periodic table contains 7 periods, corresponding to the principal electron shell numbers (1 to 7).'
+    },
+    {
+        cat: 'position',
+        qVi: 'Bảng tuần hoàn hóa học tiêu chuẩn có bao nhiêu nhóm (cột dọc)?',
+        qEn: 'How many groups (vertical columns) are in the standard periodic table?',
+        optionsVi: ['8 nhóm', '12 nhóm', '16 nhóm', '18 nhóm'],
+        optionsEn: ['8 groups', '12 groups', '16 groups', '18 groups'],
+        correct: 3,
+        explainVi: 'Theo chuẩn IUPAC quốc tế, bảng tuần hoàn gồm 18 cột dọc được đánh số từ nhóm 1 đến nhóm 18.',
+        explainEn: 'Under modern IUPAC conventions, the periodic table consists of 18 numbered vertical groups.'
+    },
+    {
+        cat: 'position',
+        qVi: 'Nguyên tố nào có số hiệu nguyên tử Z = 6?',
+        qEn: 'Which element has the atomic number Z = 6?',
+        optionsVi: ['Oxi (O)', 'Nitơ (N)', 'Cacbon (C)', 'Bo (B)'],
+        optionsEn: ['Oxygen (O)', 'Nitrogen (N)', 'Carbon (C)', 'Boron (B)'],
+        correct: 2,
+        explainVi: 'Cacbon có 6 proton (Z = 6), tạo thành xương sống của mọi phân tử sinh học và sự sống trên Trái Đất.',
+        explainEn: 'Carbon has 6 protons (Z = 6), serving as the universal structural backbone for organic molecules.'
+    },
+    {
+        cat: 'position',
+        qVi: 'Nguyên tố nào mở đầu cho Chu kỳ 3 trong bảng tuần hoàn?',
+        qEn: 'Which element starts Period 3 of the periodic table?',
+        optionsVi: ['Liti (Li)', 'Natri (Na)', 'Kali (K)', 'Magiê (Mg)'],
+        optionsEn: ['Lithium (Li)', 'Sodium (Na)', 'Potassium (K)', 'Magnesium (Mg)'],
+        correct: 1,
+        explainVi: 'Chu kỳ 3 bắt đầu từ Natri (Z=11, [Ne]3s¹) và kết thúc ở khí hiếm Argon (Z=18).',
+        explainEn: 'Period 3 begins with Sodium (Z=11, [Ne]3s¹) and concludes at noble gas Argon (Z=18).'
+    },
+    {
+        cat: 'position',
+        qVi: 'Họ Lantanit (Lanthanides, nguyên tố 57-71) thuộc chu kỳ nào?',
+        qEn: 'Which period do the Lanthanides (elements 57-71) belong to?',
+        optionsVi: ['Chu kỳ 4', 'Chu kỳ 5', 'Chu kỳ 6', 'Chu kỳ 7'],
+        optionsEn: ['Period 4', 'Period 5', 'Period 6', 'Period 7'],
+        correct: 2,
+        explainVi: 'Dãy Lantanit thuộc Chu kỳ 6, được tách xuống bên dưới để giữ bảng tuần hoàn cân đối và gọn gàng.',
+        explainEn: 'Lanthanides reside in Period 6, typically pulled out into a bottom row to keep the layout compact.'
+    },
+
+    // --- 3. Tính chất & Trạng thái (properties) ---
+    {
+        cat: 'properties',
+        qVi: 'Kim loại duy nhất ở thể lỏng ở nhiệt độ phòng (25°C) là gì?',
+        qEn: 'What is the only metallic element that is liquid at room temperature (25°C)?',
+        optionsVi: ['Chì (Pb)', 'Thủy ngân (Hg)', 'Gali (Ga)', 'Nhôm (Al)'],
+        optionsEn: ['Lead (Pb)', 'Mercury (Hg)', 'Gallium (Ga)', 'Aluminium (Al)'],
+        correct: 1,
+        explainVi: 'Thủy ngân (Hg) có điểm nóng chảy -38.8°C, là kim loại duy nhất thể lỏng ở 25°C. Gali nóng chảy ở 29.7°C (chảy khi cầm trên tay).',
+        explainEn: 'Mercury (Hg) melts at -38.8°C, remaining liquid at room temperature. Gallium melts at 29.7°C in human body heat.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Phi kim duy nhất ở thể lỏng ở điều kiện tiêu chuẩn là gì?',
+        qEn: 'What is the only nonmetal that exists as a liquid at standard conditions?',
+        optionsVi: ['Clo (Cl₂)', 'Flo (F₂)', 'Brom (Br₂)', 'Iot (I₂)'],
+        optionsEn: ['Chlorine (Cl₂)', 'Fluorine (F₂)', 'Bromine (Br₂)', 'Iodine (I₂)'],
+        correct: 2,
+        explainVi: 'Brom (Br₂) là phi kim duy nhất ở thể lỏng tại nhiệt độ phòng, có màu đỏ nâu bốc khói rất đặc trưng.',
+        explainEn: 'Bromine (Br₂) is the only nonmetal liquid at room temperature, forming a pungent reddish-brown vapor.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Nguyên tố nào có độ âm điện lớn nhất trong toàn bộ bảng tuần hoàn?',
+        qEn: 'Which element has the highest electronegativity in the periodic table?',
+        optionsVi: ['Oxi (O)', 'Clo (Cl)', 'Flo (F)', 'Nitơ (N)'],
+        optionsEn: ['Oxygen (O)', 'Chlorine (Cl)', 'Fluorine (F)', 'Nitrogen (N)'],
+        correct: 2,
+        explainVi: 'Flo (F) có độ âm điện lớn nhất (3.98 theo thang Pauling), hút electron mạnh nhất trong tất cả các nguyên tố.',
+        explainEn: 'Fluorine (F) exhibits the highest electronegativity (3.98 Pauling scale), violently attracting bonding electrons.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Kim loại nào có khối lượng riêng nhẹ nhất trong tất cả các kim loại?',
+        qEn: 'Which metal is the lightest (lowest density) of all metallic elements?',
+        optionsVi: ['Nhôm (Al)', 'Magiê (Mg)', 'Liti (Li)', 'Natri (Na)'],
+        optionsEn: ['Aluminium (Al)', 'Magnesium (Mg)', 'Lithium (Li)', 'Sodium (Na)'],
+        correct: 2,
+        explainVi: 'Liti (Li) có khối lượng riêng chỉ 0.534 g/cm³, nhẹ bằng một nửa nước và có thể nổi bồng bềnh trên dầu hỏa.',
+        explainEn: 'Lithium (Li) has a density of only 0.534 g/cm³, half the density of water, allowing it to float on oil.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Kim loại nào có độ dẫn điện tốt nhất ở điều kiện thường?',
+        qEn: 'Which metal is the best electrical conductor at room temperature?',
+        optionsVi: ['Vàng (Au)', 'Đồng (Cu)', 'Nhôm (Al)', 'Bạc (Ag)'],
+        optionsEn: ['Gold (Au)', 'Copper (Cu)', 'Aluminium (Al)', 'Silver (Ag)'],
+        correct: 3,
+        explainVi: 'Bạc (Ag) dẫn điện tốt nhất, kế tiếp là Đồng (Cu) và Vàng (Au). Đồng được dùng làm dây điện nhờ giá thành hợp lý hơn.',
+        explainEn: 'Silver (Ag) possesses the highest electrical conductivity, followed by Copper (Cu) and Gold (Au).'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Kim loại nào có nhiệt độ nóng chảy cao nhất (3.422°C)?',
+        qEn: 'Which metal has the highest melting point (3,422°C)?',
+        optionsVi: ['Titan (Ti)', 'Vonfram (W)', 'Platin (Pt)', 'Osmi (Os)'],
+        optionsEn: ['Titanium (Ti)', 'Tungsten (W)', 'Platinum (Pt)', 'Osmium (Os)'],
+        correct: 1,
+        explainVi: 'Vonfram (Tungsten) nóng chảy ở 3.422°C, nhờ đó được chọn làm dây tóc bóng đèn sợi đốt truyền thống.',
+        explainEn: 'Tungsten (W) melts at 3,422°C (6,192°F), making it the gold standard for incandescent lamp filaments.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Dạng thù hình tự nhiên cứng nhất của nguyên tố Cacbon là gì?',
+        qEn: 'What is the hardest naturally occurring allotrope of Carbon?',
+        optionsVi: ['Than chì (Graphite)', 'Graphene', 'Kim cương (Diamond)', 'Fullerene'],
+        optionsEn: ['Graphite', 'Graphene', 'Diamond', 'Fullerene'],
+        correct: 2,
+        explainVi: 'Kim cương có mạng tinh thể tứ diện cộng hóa trị vô cùng bền chắc, đạt độ cứng tối đa 10/10 trên thang Mohs.',
+        explainEn: 'Diamond forms a rigid 3D tetrahedral network of covalent bonds, scoring 10/10 on the Mohs hardness scale.'
+    },
+    {
+        cat: 'properties',
+        qVi: 'Nguyên tố nhẹ nhất và phong phú nhất trong toàn vũ trụ là gì?',
+        qEn: 'What is the lightest and most abundant element in the universe?',
+        optionsVi: ['Heli (He)', 'Hiđro (H)', 'Liti (Li)', 'Neon (Ne)'],
+        optionsEn: ['Helium (He)', 'Hydrogen (H)', 'Lithium (Li)', 'Neon (Ne)'],
+        correct: 1,
+        explainVi: 'Hiđro (H) chỉ có 1 proton và 1 electron, chiếm khoảng 75% tổng khối lượng nguyên tố trong vũ trụ.',
+        explainEn: 'Hydrogen (H) has 1 proton and 1 electron, comprising roughly 75% of all elemental baryonic matter in the cosmos.'
+    },
+
+    // --- 4. Ứng dụng thực tế (applications) ---
+    {
+        cat: 'applications',
+        qVi: 'Chất khí nào chiếm thể tích lớn nhất trong bầu khí quyển Trái Đất (~78%)?',
+        qEn: 'Which gas makes up the largest fraction (~78%) of Earth\'s atmosphere?',
+        optionsVi: ['Oxi (O₂)', 'Cacbon đioxit (CO₂)', 'Nitơ (N₂)', 'Argon (Ar)'],
+        optionsEn: ['Oxygen (O₂)', 'Carbon dioxide (CO₂)', 'Nitrogen (N₂)', 'Argon (Ar)'],
+        correct: 2,
+        explainVi: 'Khí Nitơ (N₂) chiếm khoảng 78% khí quyển, Oxi chiếm ~21%, Argon ~0.93% và CO₂ chiếm khoảng 0.04%.',
+        explainEn: 'Nitrogen gas (N₂) accounts for ~78% of dry atmosphere, Oxygen ~21%, Argon ~0.93%, and CO₂ ~0.04%.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Kim loại nào có trữ lượng phong phú nhất trong lớp vỏ Trái Đất?',
+        qEn: 'What is the most abundant metal in Earth\'s crust?',
+        optionsVi: ['Sắt (Fe)', 'Nhôm (Al)', 'Canxi (Ca)', 'Titan (Ti)'],
+        optionsEn: ['Iron (Fe)', 'Aluminium (Al)', 'Calcium (Ca)', 'Titanium (Ti)'],
+        correct: 1,
+        explainVi: 'Nhôm (Al) chiếm ~8.1% khối lượng vỏ Trái Đất, là kim loại phong phú nhất (Sắt đứng thứ 2 với ~5%).',
+        explainEn: 'Aluminium (Al) constitutes ~8.1% of Earth\'s crust mass, making it the most abundant metallic element.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Nguyên tố nào là nền tảng cốt lõi của công nghệ vi mạch bán dẫn và chip máy tính?',
+        qEn: 'Which element is the foundation of modern semiconductors and computer chips?',
+        optionsVi: ['Đồng (Cu)', 'Gecmani (Ge)', 'Silic (Si)', 'Cacbon (C)'],
+        optionsEn: ['Copper (Cu)', 'Germanium (Ge)', 'Silicon (Si)', 'Carbon (C)'],
+        correct: 2,
+        explainVi: 'Silic (Silicon) là chất bán dẫn số 1 thế giới, nguồn gốc tên gọi của thung lũng công nghệ Silicon Valley.',
+        explainEn: 'Silicon (Si) is the premier semiconductor material, giving rise to California\'s iconic Silicon Valley.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Khí nào được dùng để bơm bóng bay và khinh khí cầu vì hoàn toàn không cháy nổ?',
+        qEn: 'Which gas is preferred in party balloons and blimps due to zero flammability?',
+        optionsVi: ['Hiđro (H₂)', 'Heli (He)', 'Metan (CH₄)', 'Oxi (O₂)'],
+        optionsEn: ['Hydrogen (H₂)', 'Helium (He)', 'Methane (CH₄)', 'Oxygen (O₂)'],
+        correct: 1,
+        explainVi: 'Heli là khí hiếm trơ tuyệt đối không bắt lửa, an toàn hơn nhiều so với Hiđro (dù Hiđro nhẹ hơn).',
+        explainEn: 'Helium is a noble gas that cannot combust, making it far safer than lighter but flammable hydrogen.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Kim loại nào là thành phần chính trong pin sạc của smartphone và xe điện hiện nay?',
+        qEn: 'Which metal is essential for modern smartphone and electric vehicle batteries?',
+        optionsVi: ['Chì (Pb)', 'Liti (Li)', 'Kẽm (Zn)', 'Niken (Ni)'],
+        optionsEn: ['Lead (Pb)', 'Lithium (Li)', 'Zinc (Zn)', 'Nickel (Ni)'],
+        correct: 1,
+        explainVi: 'Pin Lithium-ion nhẹ và có mật độ lưu trữ năng lượng vượt trội, tạo nên cuộc cách mạng thiết bị di động.',
+        explainEn: 'Lithium-ion batteries revolutionized portable electronics and electric mobility due to extreme energy density.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Khí màu vàng lục có mùi hắc được dùng để khử trùng làm sạch nước máy là gì?',
+        qEn: 'Which yellow-green gas is widely used to disinfect municipal drinking water?',
+        optionsVi: ['Flo (F₂)', 'Clo (Cl₂)', 'Ozon (O₃)', 'Lưu huỳnh đioxit (SO₂)'],
+        optionsEn: ['Fluorine (F₂)', 'Chlorine (Cl₂)', 'Ozone (O₃)', 'Sulfur dioxide (SO₂)'],
+        correct: 1,
+        explainVi: 'Khí Clo (Cl₂) khi sục vào nước tạo axit hipoclorơ (HClO) diệt khuẩn mạnh mẽ, bảo vệ nguồn nước sinh hoạt.',
+        explainEn: 'Chlorine (Cl₂) forms hypochlorous acid (HClO) in water, powerfully eradicating waterborne pathogens.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Khoáng chất kim loại nào thiết yếu nhất cho sự chắc khỏe của xương và răng?',
+        qEn: 'Which mineral element is essential for human bones and teeth strength?',
+        optionsVi: ['Sắt (Fe)', 'Kẽm (Zn)', 'Canxi (Ca)', 'Kali (K)'],
+        optionsEn: ['Iron (Fe)', 'Zinc (Zn)', 'Calcium (Ca)', 'Potassium (K)'],
+        correct: 2,
+        explainVi: 'Khoảng 99% Canxi trong cơ thể người nằm ở xương và răng dưới dạng hợp chất canxi hydroxyapatite.',
+        explainEn: 'Roughly 99% of body calcium is stored in teeth and bone tissues as hydroxyapatite crystals.'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Trong một phân tử nước (H₂O), nguyên tố nào chiếm phần lớn khối lượng phân tử?',
+        qEn: 'In a water molecule (H₂O), which element contributes the majority of its mass?',
+        optionsVi: ['Hiđro', 'Oxi', 'Cả hai bằng nhau', 'Tùy nhiệt độ'],
+        optionsEn: ['Hydrogen', 'Oxygen', 'Both equal', 'Varies by temperature'],
+        correct: 1,
+        explainVi: 'Phân tử khối H₂O = 18 g/mol, trong đó Oxi chiếm 16 g/mol (~88.9%), còn 2 nguyên tử H chỉ chiếm 2 g/mol (~11.1%).',
+        explainEn: 'Water (18 g/mol) is 88.9% Oxygen by mass (16 g/mol) and only 11.1% Hydrogen (2 g/mol).'
+    },
+    {
+        cat: 'applications',
+        qVi: 'Nguyên tố nào tạo nên lớp chống dính Teflon siêu bền trên chảo nấu bếp?',
+        qEn: 'Which element is key to non-stick Teflon coating on cookware?',
+        optionsVi: ['Clo (Cl)', 'Flo (F)', 'Silic (Si)', 'Titan (Ti)'],
+        optionsEn: ['Chlorine (Cl)', 'Fluorine (F)', 'Silicon (Si)', 'Titanium (Ti)'],
+        correct: 1,
+        explainVi: 'Teflon (PTFE) chứa liên kết Carbon-Fluorine cực kỳ bền vững, tạo bề mặt trơ và trơn láng chống bám dính dầu mỡ.',
+        explainEn: 'Teflon (PTFE) relies on remarkably strong Carbon-Fluorine bonds, creating an ultra-low friction inert barrier.'
+    }
+];
+
+// ============================================================
+// MINI-QUIZ STATE & ENGINE
+// ============================================================
+let currentQuizQuestions = [];
+let currentQuizIndex = 0;
+let quizScore = 0;
+let isQuizAnswered = false;
+let activeQuizCat = 'all';
+let confettiAnimId = null;
+
+function openQuizModal() {
+    const modal = document.getElementById('quiz-modal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    startQuiz(activeQuizCat || 'all');
+}
+
+function closeQuizModal() {
+    const modal = document.getElementById('quiz-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    if (confettiAnimId) {
+        cancelAnimationFrame(confettiAnimId);
+        confettiAnimId = null;
+    }
+}
+
+function startQuiz(category = 'all') {
+    activeQuizCat = category;
+    quizScore = 0;
+    currentQuizIndex = 0;
+    isQuizAnswered = false;
+
+    // Filter questions
+    let pool = quizQuestions;
+    if (category !== 'all') {
+        pool = quizQuestions.filter(q => q.cat === category);
+    }
+
+    // Shuffle pool
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+
+    // Pick 10 questions (or all if fewer)
+    currentQuizQuestions = shuffled.slice(0, Math.min(10, shuffled.length));
+
+    // Show play view, hide result view
+    document.getElementById('quiz-play-view').classList.remove('hidden');
+    document.getElementById('quiz-result-view').classList.add('hidden');
+
+    renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+    if (!currentQuizQuestions || currentQuizQuestions.length === 0) return;
+    const q = currentQuizQuestions[currentQuizIndex];
+    if (!q) return;
+
+    isQuizAnswered = false;
+    const isVi = currentLang === 'vi';
+
+    // Header counter & progress
+    const total = currentQuizQuestions.length;
+    const num = currentQuizIndex + 1;
+    document.getElementById('quiz-question-counter').textContent = isVi
+        ? `Câu ${num} / ${total}`
+        : `Question ${num} / ${total}`;
+    
+    const catLabelsVi = {
+        symbols: 'Ký hiệu & Tên gọi',
+        position: 'Vị trí & Nhóm',
+        properties: 'Tính chất & Trạng thái',
+        applications: 'Ứng dụng thực tế'
+    };
+    const catLabelsEn = {
+        symbols: 'Symbols & Names',
+        position: 'Positions & Groups',
+        properties: 'Properties & States',
+        applications: 'Real-world Uses'
+    };
+    document.getElementById('quiz-question-category').textContent = isVi
+        ? (catLabelsVi[q.cat] || 'Kiến thức chung')
+        : (catLabelsEn[q.cat] || 'General Knowledge');
+
+    // Progress bar
+    const progressPct = ((num) / total) * 100;
+    document.getElementById('quiz-progress-bar').style.width = `${progressPct}%`;
+
+    // Question Text
+    document.getElementById('quiz-question-text').textContent = isVi ? q.qVi : q.qEn;
+
+    // Current Score
+    document.getElementById('quiz-current-score').textContent = `${quizScore}/${currentQuizIndex}`;
+
+    // Options
+    const container = document.getElementById('quiz-options-container');
+    container.innerHTML = '';
+    const letters = ['A', 'B', 'C', 'D'];
+    const options = isVi ? q.optionsVi : q.optionsEn;
+
+    options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-opt-btn w-full p-3.5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700/80 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left transition-all duration-200 flex items-center gap-3 shadow-sm group cursor-pointer';
+        btn.dataset.index = idx;
+        btn.innerHTML = `
+            <span class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black text-xs flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                ${letters[idx]}
+            </span>
+            <span class="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 leading-snug flex-1">
+                ${optText}
+            </span>
+            <span class="quiz-opt-icon hidden text-base"></span>
+        `;
+
+        btn.addEventListener('click', () => selectQuizOption(idx));
+        container.appendChild(btn);
+    });
+
+    // Reset Explanation & Next Button
+    const expBox = document.getElementById('quiz-explanation-box');
+    expBox.classList.add('hidden');
+    document.getElementById('quiz-next-btn').classList.add('hidden');
+    document.getElementById('quiz-next-btn').classList.remove('flex');
+}
+
+function selectQuizOption(pickedIdx) {
+    if (isQuizAnswered) return;
+    isQuizAnswered = true;
+
+    const q = currentQuizQuestions[currentQuizIndex];
+    const isVi = currentLang === 'vi';
+    const isCorrect = pickedIdx === q.correct;
+
+    if (isCorrect) {
+        quizScore++;
+        playSound('quiz_correct');
+    } else {
+        playSound('quiz_wrong');
+    }
+
+    document.getElementById('quiz-current-score').textContent = `${quizScore}/${currentQuizIndex + 1}`;
+
+    const optionButtons = document.querySelectorAll('.quiz-opt-btn');
+    optionButtons.forEach((btn, idx) => {
+        btn.disabled = true;
+        btn.classList.remove('cursor-pointer', 'hover:border-amber-400', 'hover:bg-amber-50/50', 'dark:hover:bg-amber-950/20');
+        btn.classList.add('cursor-default');
+
+        const icon = btn.querySelector('.quiz-opt-icon');
+        icon.classList.remove('hidden');
+
+        if (idx === q.correct) {
+            btn.className = 'w-full p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-left transition-all flex items-center gap-3 shadow-md';
+            btn.querySelector('span:first-child').className = 'w-8 h-8 rounded-xl bg-emerald-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0';
+            icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>';
+        } else if (idx === pickedIdx) {
+            btn.className = 'w-full p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-left transition-all flex items-center gap-3 shadow-md';
+            btn.querySelector('span:first-child').className = 'w-8 h-8 rounded-xl bg-rose-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0';
+            icon.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-500 text-lg"></i>';
+        } else {
+            btn.classList.add('opacity-40');
+        }
+    });
+
+    // Show Explanation
+    const expBox = document.getElementById('quiz-explanation-box');
+    document.getElementById('quiz-explanation-text').textContent = isVi ? q.explainVi : q.explainEn;
+    expBox.classList.remove('hidden');
+
+    // Show Next or Finish Button
+    const nextBtn = document.getElementById('quiz-next-btn');
+    const isLast = currentQuizIndex === currentQuizQuestions.length - 1;
+    const nextText = document.getElementById('quiz-next-btn-text');
+    if (isLast) {
+        nextText.textContent = isVi ? 'Xem kết quả' : 'See Results';
+    } else {
+        nextText.textContent = isVi ? 'Câu tiếp theo' : 'Next Question';
+    }
+    nextBtn.classList.remove('hidden');
+    nextBtn.classList.add('flex');
+}
+
+function nextQuizQuestion() {
+    if (currentQuizIndex < currentQuizQuestions.length - 1) {
+        currentQuizIndex++;
+        renderQuizQuestion();
+    } else {
+        finishQuiz();
+    }
+}
+
+function finishQuiz() {
+    document.getElementById('quiz-play-view').classList.add('hidden');
+    const resultView = document.getElementById('quiz-result-view');
+    resultView.classList.remove('hidden');
+
+    const total = currentQuizQuestions.length;
+    const isVi = currentLang === 'vi';
+    const pct = Math.round((quizScore / total) * 100);
+
+    document.getElementById('quiz-final-score').textContent = `${quizScore} / ${total}`;
+    document.getElementById('quiz-final-percent').textContent = `${pct}%`;
+
+    const titleEl = document.getElementById('quiz-result-title');
+    const subEl = document.getElementById('quiz-result-subtitle');
+    const iconEl = document.getElementById('quiz-result-trophy-icon');
+
+    if (pct >= 80) {
+        titleEl.textContent = isVi ? '🎉 Xuất sắc! Bậc Thầy Hóa Học!' : '🎉 Outstanding! Chemistry Master!';
+        subEl.textContent = isVi ? 'Bạn đã trả lời đúng hầu hết tất cả các câu hỏi!' : 'You mastered almost all questions perfectly!';
+        iconEl.className = 'fa-solid fa-trophy';
+        playSound('quiz_victory');
+        setTimeout(launchConfetti, 100);
+    } else if (pct >= 60) {
+        titleEl.textContent = isVi ? '👏 Rất Tốt! Kiến Thức Vững Vàng!' : '👏 Great Job! Solid Knowledge!';
+        subEl.textContent = isVi ? 'Bạn có nền tảng hóa học rất tốt. Cố lên nhé!' : 'You have a great foundation in chemistry. Keep going!';
+        iconEl.className = 'fa-solid fa-medal';
+        playSound('quiz_victory');
+    } else {
+        titleEl.textContent = isVi ? '💪 Cố Lên! Luyện Tập Thêm Nhé!' : '💪 Keep Practicing!';
+        subEl.textContent = isVi ? 'Hãy khám phá thêm bảng tuần hoàn để nâng cao điểm số!' : 'Explore the periodic table more to boost your score!';
+        iconEl.className = 'fa-solid fa-book-open-reader';
+    }
+}
+
+function launchConfetti() {
+    const canvas = document.getElementById('quiz-confetti-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.parentElement.clientWidth || 600;
+    canvas.height = canvas.parentElement.clientHeight || 500;
+
+    const particles = [];
+    const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
+    for (let i = 0; i < 90; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height * 0.4 - 20,
+            w: Math.random() * 8 + 4,
+            h: Math.random() * 6 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vx: (Math.random() - 0.5) * 4,
+            vy: Math.random() * 3 + 2.5,
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 8
+        });
+    }
+
+    let frame = 0;
+    if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rotation += p.vRot;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        });
+
+        frame++;
+        if (frame < 180) {
+            confettiAnimId = requestAnimationFrame(animate);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiAnimId = null;
+        }
+    }
+    animate();
+}
 
 // ============================================================
 // 3D SIMULATION ENGINE (Three.js)
@@ -1302,6 +3685,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTable();
     applyLanguage();
     bindEvents();
+    setupDragAndDrop();
+    renderFlask();
+    updateDiscoveredCount();
 });
 
 // ============================================================
@@ -1319,6 +3705,8 @@ function renderTable() {
         cell.style.gridColumn = el.c;
         cell.dataset.number = el.n;
         cell.dataset.cat = el.cat;
+        cell.draggable = true;
+        cell.title = currentLang === 'vi' ? `${el.vi} (${el.s}) - Kéo vào bình phản ứng hoặc click xem chi tiết` : `${el.en} (${el.s}) - Drag into flask or click for details`;
         cell.innerHTML = `
             <span class="el-number">${el.n}</span>
             <span class="el-symbol">${el.s}</span>
@@ -1326,6 +3714,14 @@ function renderTable() {
             <span class="el-mass">${el.m}</span>
         `;
         cell.addEventListener('click', () => openModal(el));
+        cell.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', el.s);
+            e.dataTransfer.effectAllowed = 'copy';
+            cell.classList.add('opacity-50', 'scale-105');
+        });
+        cell.addEventListener('dragend', () => {
+            cell.classList.remove('opacity-50', 'scale-105');
+        });
         grid.appendChild(cell);
     });
 
@@ -1460,6 +3856,13 @@ function bindEvents() {
         applyLanguage();
         updateElementNames();
         if (currentModalElement) openModal(currentModalElement);
+        renderShelf();
+        renderRecipes();
+        renderFlask();
+        synthesizeCompound(true);
+        if (document.getElementById('quiz-modal') && document.getElementById('quiz-modal').classList.contains('active')) {
+            renderQuizQuestion();
+        }
         localStorage.setItem('pt-lang', currentLang);
     });
 
@@ -1469,6 +3872,104 @@ function bindEvents() {
         document.body.style.overflow = 'hidden';
     });
 
+    // Compound Builder Modal triggers
+    const openLabBtn = document.getElementById('open-lab-btn');
+    if (openLabBtn) openLabBtn.addEventListener('click', openCompoundModal);
+
+    const fabLabBtn = document.getElementById('fab-lab-btn');
+    if (fabLabBtn) fabLabBtn.addEventListener('click', openCompoundModal);
+
+    // Mini-Quiz Modal triggers
+    const openQuizBtn = document.getElementById('open-quiz-btn');
+    if (openQuizBtn) openQuizBtn.addEventListener('click', openQuizModal);
+
+    const quizNextBtn = document.getElementById('quiz-next-btn');
+    if (quizNextBtn) quizNextBtn.addEventListener('click', nextQuizQuestion);
+
+    const quizRestartBtn = document.getElementById('quiz-restart-btn');
+    if (quizRestartBtn) quizRestartBtn.addEventListener('click', () => startQuiz(activeQuizCat));
+
+    // Quiz Category Pills
+    document.querySelectorAll('#quiz-category-pills .quiz-cat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#quiz-category-pills .quiz-cat-pill').forEach(b => {
+                b.classList.remove('active', 'bg-amber-500', 'text-white');
+                b.classList.add('bg-gray-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            });
+            btn.classList.add('active', 'bg-amber-500', 'text-white');
+            btn.classList.remove('bg-gray-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            startQuiz(btn.dataset.cat);
+        });
+    });
+
+    // Beaker clear & react buttons
+    const clearFlaskBtn = document.getElementById('btn-clear-flask');
+    if (clearFlaskBtn) clearFlaskBtn.addEventListener('click', clearFlask);
+
+    const reactBtn = document.getElementById('btn-do-react');
+    if (reactBtn) reactBtn.addEventListener('click', () => synthesizeCompound(false));
+
+    // Element Detail Modal: Add to flask button
+    const addFlaskBtn = document.getElementById('btn-modal-add-flask');
+    if (addFlaskBtn) {
+        addFlaskBtn.addEventListener('click', () => {
+            if (!currentModalElement) return;
+            addToFlask(currentModalElement.s, 1);
+            renderShelf();
+            const origHTML = addFlaskBtn.innerHTML;
+            addFlaskBtn.innerHTML = `<i class="fa-solid fa-check text-sm"></i> <span>${currentLang === 'vi' ? 'Đã thêm ' + currentModalElement.s + ' vào bình!' : 'Added ' + currentModalElement.s + ' to flask!'}</span>`;
+            addFlaskBtn.classList.add('ring-2', 'ring-white');
+            setTimeout(() => {
+                addFlaskBtn.innerHTML = origHTML;
+                addFlaskBtn.classList.remove('ring-2', 'ring-white');
+            }, 1200);
+        });
+    }
+
+    // Compound Builder Tabs
+    const tabShelf = document.getElementById('tab-btn-shelf');
+    const tabRecipes = document.getElementById('tab-btn-recipes');
+    const panelShelf = document.getElementById('panel-shelf');
+    const panelRecipes = document.getElementById('panel-recipes');
+
+    if (tabShelf && tabRecipes && panelShelf && panelRecipes) {
+        tabShelf.addEventListener('click', () => {
+            panelShelf.classList.remove('hidden');
+            panelRecipes.classList.add('hidden');
+            tabShelf.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-sm flex items-center justify-center gap-1.5';
+            tabRecipes.className = 'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center gap-1.5';
+            renderShelf();
+        });
+
+        tabRecipes.addEventListener('click', () => {
+            panelRecipes.classList.remove('hidden');
+            panelShelf.classList.add('hidden');
+            tabRecipes.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-sm flex items-center justify-center gap-1.5';
+            tabShelf.className = 'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center gap-1.5';
+            renderRecipes();
+        });
+    }
+
+    // Compound Builder Searches & Filters
+    const shelfSearch = document.getElementById('shelf-search');
+    if (shelfSearch) shelfSearch.addEventListener('input', debounce(renderShelf, 150));
+
+    const recipeSearch = document.getElementById('recipe-search');
+    if (recipeSearch) recipeSearch.addEventListener('input', debounce(renderRecipes, 150));
+
+    document.querySelectorAll('#shelf-filter-chips .shelf-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#shelf-filter-chips .shelf-filter').forEach(b => {
+                b.classList.remove('active', 'bg-emerald-500', 'text-white');
+                b.classList.add('bg-gray-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            });
+            btn.classList.add('active', 'bg-emerald-500', 'text-white');
+            btn.classList.remove('bg-gray-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            currentShelfGroup = btn.dataset.group;
+            renderShelf();
+        });
+    });
+
     // Close modals on overlay click
     document.getElementById('element-modal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeModal();
@@ -1476,12 +3977,19 @@ function bindEvents() {
     document.getElementById('credits-modal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeCredits();
     });
+    const compModal = document.getElementById('compound-modal');
+    if (compModal) {
+        compModal.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeCompoundModal();
+        });
+    }
 
     // Close modals or navigate on Keyboard
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
             closeCredits();
+            closeCompoundModal();
         } else if (document.getElementById('element-modal').classList.contains('active')) {
             if (e.key === 'ArrowLeft') navigateModal(-1);
             else if (e.key === 'ArrowRight') navigateModal(1);
