@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Tuần Hoàn Hóa Học | Interactive Periodic Table</title>
+    <meta name="description" content="Bảng tuần hoàn hóa học tương tác với đầy đủ 118 nguyên tố - Interactive Periodic Table of Elements">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Periodic Table Grid */
+        .pt-grid {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(62px, 1fr));
+            gap: 4px;
+            min-width: 1140px;
+        }
+
+        /* Element Cell */
+        .el-cell {
+            aspect-ratio: 1;
+            border-radius: 9px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1.5px solid transparent;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 3px 2px;
+            min-height: 62px;
+            user-select: none;
+        }
+        .el-cell:hover {
+            transform: scale(1.32);
+            z-index: 50;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+        }
+        .el-cell .el-number {
+            font-size: 8.5px;
+            font-weight: 700;
+            opacity: 0.9;
+            line-height: 1;
+            letter-spacing: -0.2px;
+        }
+        .el-cell .el-symbol {
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+            margin: 1px 0;
+        }
+        .el-cell .el-name {
+            font-size: 8.5px;
+            font-weight: 600;
+            line-height: 1.1;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 96%;
+            padding: 0 1px;
+            letter-spacing: -0.15px;
+        }
+        .el-cell .el-mass {
+            font-size: 7.5px;
+            font-weight: 600;
+            opacity: 0.85;
+            line-height: 1;
+            margin-top: 1px;
+        }
+
+        /* Category Colors - Light Mode (High Contrast, Bold, Legible) */
+        .cat-nm { background: rgba(14, 165, 233, 0.16); border-color: rgba(2, 132, 199, 0.5); color: #024168; }
+        .cat-ng { background: rgba(168, 85, 247, 0.16); border-color: rgba(147, 51, 234, 0.5); color: #4c1d95; }
+        .cat-am { background: rgba(244, 63, 94, 0.16); border-color: rgba(225, 29, 72, 0.5); color: #881337; }
+        .cat-ae { background: rgba(249, 115, 22, 0.16); border-color: rgba(234, 88, 12, 0.5); color: #7c2d12; }
+        .cat-tm { background: rgba(234, 179, 8, 0.2); border-color: rgba(180, 83, 9, 0.5); color: #713f12; }
+        .cat-pt { background: rgba(34, 197, 94, 0.16); border-color: rgba(22, 163, 74, 0.5); color: #14532d; }
+        .cat-ml { background: rgba(20, 184, 166, 0.16); border-color: rgba(13, 148, 136, 0.5); color: #134e4a; }
+        .cat-hl { background: rgba(99, 102, 241, 0.16); border-color: rgba(79, 70, 229, 0.5); color: #2e287a; }
+        .cat-ln { background: rgba(236, 72, 153, 0.16); border-color: rgba(219, 39, 119, 0.5); color: #831843; }
+        .cat-ac { background: rgba(217, 70, 239, 0.16); border-color: rgba(192, 38, 211, 0.5); color: #701a75; }
+
+        /* Crisp dark symbols for light mode */
+        .cat-nm .el-symbol { color: #023350; }
+        .cat-ng .el-symbol { color: #3b0764; }
+        .cat-am .el-symbol { color: #700c2a; }
+        .cat-ae .el-symbol { color: #682006; }
+        .cat-tm .el-symbol { color: #582506; }
+        .cat-pt .el-symbol { color: #0c3d1f; }
+        .cat-ml .el-symbol { color: #0a3835; }
+        .cat-hl .el-symbol { color: #1d1a53; }
+        .cat-ln .el-symbol { color: #630c30; }
+        .cat-ac .el-symbol { color: #520f56; }
+
+        /* Category Colors - Dark Mode (Rich Glass, Bright White Symbols with Glow) */
+        .dark .cat-nm { background: rgba(14, 165, 233, 0.22); border-color: rgba(56, 189, 248, 0.6); color: #e0f2fe; }
+        .dark .cat-ng { background: rgba(168, 85, 247, 0.22); border-color: rgba(192, 132, 252, 0.6); color: #f3e8ff; }
+        .dark .cat-am { background: rgba(244, 63, 94, 0.22); border-color: rgba(251, 113, 133, 0.6); color: #ffe4e6; }
+        .dark .cat-ae { background: rgba(249, 115, 22, 0.22); border-color: rgba(251, 146, 60, 0.6); color: #ffedd5; }
+        .dark .cat-tm { background: rgba(234, 179, 8, 0.22); border-color: rgba(250, 204, 21, 0.6); color: #fef9c3; }
+        .dark .cat-pt { background: rgba(34, 197, 94, 0.22); border-color: rgba(74, 222, 128, 0.6); color: #dcfce7; }
+        .dark .cat-ml { background: rgba(20, 184, 166, 0.22); border-color: rgba(45, 212, 191, 0.6); color: #ccfbf1; }
+        .dark .cat-hl { background: rgba(99, 102, 241, 0.22); border-color: rgba(129, 140, 248, 0.6); color: #e0e7ff; }
+        .dark .cat-ln { background: rgba(236, 72, 153, 0.22); border-color: rgba(244, 114, 182, 0.6); color: #fce7f3; }
+        .dark .cat-ac { background: rgba(217, 70, 239, 0.22); border-color: rgba(232, 121, 249, 0.6); color: #fae8ff; }
+
+        .dark .cat-nm .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(56,189,248,0.7); }
+        .dark .cat-ng .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(168,85,247,0.7); }
+        .dark .cat-am .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(244,63,94,0.7); }
+        .dark .cat-ae .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(249,115,22,0.7); }
+        .dark .cat-tm .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(234,179,8,0.7); }
+        .dark .cat-pt .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(34,197,94,0.7); }
+        .dark .cat-ml .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(20,184,166,0.7); }
+        .dark .cat-hl .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(99,102,241,0.7); }
+        .dark .cat-ln .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(236,72,153,0.7); }
+        .dark .cat-ac .el-symbol { color: #ffffff; text-shadow: 0 0 12px rgba(217,70,239,0.7); }
+
+        /* Hover glow per category */
+        .cat-nm:hover { box-shadow: 0 0 22px rgba(56,189,248,0.6) !important; }
+        .cat-ng:hover { box-shadow: 0 0 22px rgba(168,85,247,0.6) !important; }
+        .cat-am:hover { box-shadow: 0 0 22px rgba(244,63,94,0.6) !important; }
+        .cat-ae:hover { box-shadow: 0 0 22px rgba(249,115,22,0.6) !important; }
+        .cat-tm:hover { box-shadow: 0 0 22px rgba(234,179,8,0.6) !important; }
+        .cat-pt:hover { box-shadow: 0 0 22px rgba(34,197,94,0.6) !important; }
+        .cat-ml:hover { box-shadow: 0 0 22px rgba(20,184,166,0.6) !important; }
+        .cat-hl:hover { box-shadow: 0 0 22px rgba(99,102,241,0.6) !important; }
+        .cat-ln:hover { box-shadow: 0 0 22px rgba(236,72,153,0.6) !important; }
+        .cat-ac:hover { box-shadow: 0 0 22px rgba(217,70,239,0.6) !important; }
+
+        /* Dimmed state for filtered elements */
+        .el-cell.dimmed { opacity: 0.12; transform: scale(0.95); pointer-events: none; }
+        .el-cell.highlight { animation: pulse-glow 1.5s ease-in-out infinite; }
+        @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 5px currentColor; } 50% { box-shadow: 0 0 20px currentColor; } }
+
+        /* Series markers */
+        .series-marker {
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: default;
+            min-height: 62px;
+            aspect-ratio: 1;
+        }
+        .series-ln { background: rgba(236,72,153,0.18); border: 1.5px dashed rgba(236,72,153,0.6); color: #be185d; }
+        .dark .series-ln { background: rgba(236,72,153,0.22); border-color: rgba(244,114,182,0.6); color: #fbcfe8; }
+        .series-ac { background: rgba(217,70,239,0.18); border: 1.5px dashed rgba(217,70,239,0.6); color: #a21caf; }
+        .dark .series-ac { background: rgba(217,70,239,0.22); border-color: rgba(232,121,249,0.6); color: #f5d0fe; }
+
+        /* Modal */
+        .modal-overlay {
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            transform: scale(0.94) translateY(18px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+        }
+        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+
+        /* Legend dots */
+        .legend-dot { width: 13px; height: 13px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.5); }
+
+        /* Glass Header */
+        .glass-header {
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(255,255,255,0.88); border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        .dark .glass-header {
+            background: rgba(15,23,42,0.9); border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* Filter buttons */
+        .filter-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            font-size: 11.5px;
+            color: #1e293b;
+        }
+        .dark .filter-btn {
+            color: #f1f5f9;
+        }
+        .filter-btn.active {
+            transform: translateY(-1px) scale(1.04);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+            font-weight: 700;
+            border-width: 1.5px;
+        }
+
+        /* 3D Container Background */
+        .bg-radial-gradient {
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+        }
+
+        /* Credits card */
+        .credit-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1));
+            border: 1px solid rgba(99,102,241,0.2);
+            transition: all 0.3s ease;
+        }
+        .credit-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(99,102,241,0.2);
+            border-color: rgba(99,102,241,0.4);
+        }
+        .dark .credit-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15));
+            border-color: rgba(99,102,241,0.3);
+        }
+
+        /* Toggle switch */
+        .toggle-track {
+            width: 52px; height: 28px; border-radius: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            position: relative; cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .toggle-thumb {
+            width: 22px; height: 22px; border-radius: 50%; background: white;
+            position: absolute; top: 3px; left: 3px;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+        }
+        .toggle-track.active .toggle-thumb { transform: translateX(24px); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 min-h-screen text-gray-800 dark:text-gray-100 transition-colors duration-500">
+
+    <!-- ========== HEADER ========== -->
+    <header class="glass-header sticky top-0 z-[100] px-4 py-3">
+        <div class="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                    <i class="fa-solid fa-atom text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 id="main-title" class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent leading-tight">
+                        Bảng Tuần Hoàn Hóa Học
+                    </h1>
+                    <p id="sub-title" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">118 Nguyên tố • Tương tác</p>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="relative flex-1 max-w-xs min-w-[200px] order-3 md:order-2">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="search-input"
+                    class="w-full pl-9 pr-4 py-2 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-gray-400"
+                    data-placeholder-vi="Tìm nguyên tố..." data-placeholder-en="Search elements...">
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-3 order-2 md:order-3">
+                <!-- Language Toggle -->
+                <div class="toggle-track" id="lang-toggle" title="Chuyển ngôn ngữ">
+                    <div class="toggle-thumb">
+                        <span id="lang-icon" class="text-[10px] font-bold text-indigo-600">VI</span>
+                    </div>
+                </div>
+
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="w-10 h-10 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 transition-all shadow-sm" title="Chế độ sáng/tối">
+                    <i class="fa-solid fa-sun text-amber-500 dark:hidden"></i>
+                    <i class="fa-solid fa-moon text-indigo-400 hidden dark:block"></i>
+                </button>
+
+                <!-- Credits Button -->
+                <button id="credits-btn" class="w-10 h-10 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 transition-all shadow-sm" title="Thành viên nhóm">
+                    <i class="fa-solid fa-users text-purple-500"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========== LEGEND & FILTERS ========== -->
+    <section class="max-w-[1400px] mx-auto px-4 pt-4 pb-2">
+        <div class="flex flex-wrap gap-2 items-center justify-center" id="filter-bar">
+            <button class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow transition-all" data-cat="all">
+                <span data-i18n="all">Tất cả</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="am" style="background:rgba(251,113,133,0.2);border:1px solid rgba(251,113,133,0.4);">
+                <span class="legend-dot" style="background:rgba(251,113,133,0.6);"></span><span data-i18n="am">Kim loại kiềm</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="ae" style="background:rgba(251,146,60,0.2);border:1px solid rgba(251,146,60,0.4);">
+                <span class="legend-dot" style="background:rgba(251,146,60,0.6);"></span><span data-i18n="ae">Kiềm thổ</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="tm" style="background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.4);">
+                <span class="legend-dot" style="background:rgba(251,191,36,0.6);"></span><span data-i18n="tm">Chuyển tiếp</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="pt" style="background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.4);">
+                <span class="legend-dot" style="background:rgba(74,222,128,0.6);"></span><span data-i18n="pt">Sau chuyển tiếp</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="ml" style="background:rgba(45,212,191,0.2);border:1px solid rgba(45,212,191,0.4);">
+                <span class="legend-dot" style="background:rgba(45,212,191,0.6);"></span><span data-i18n="ml">Á kim</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="nm" style="background:rgba(56,189,248,0.2);border:1px solid rgba(56,189,248,0.4);">
+                <span class="legend-dot" style="background:rgba(56,189,248,0.6);"></span><span data-i18n="nm">Phi kim</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="hl" style="background:rgba(129,140,248,0.2);border:1px solid rgba(129,140,248,0.4);">
+                <span class="legend-dot" style="background:rgba(129,140,248,0.6);"></span><span data-i18n="hl">Halogen</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="ng" style="background:rgba(167,139,250,0.2);border:1px solid rgba(167,139,250,0.4);">
+                <span class="legend-dot" style="background:rgba(167,139,250,0.6);"></span><span data-i18n="ng">Khí hiếm</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="ln" style="background:rgba(244,114,182,0.2);border:1px solid rgba(244,114,182,0.4);">
+                <span class="legend-dot" style="background:rgba(244,114,182,0.6);"></span><span data-i18n="ln">Lantanit</span>
+            </button>
+            <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all flex items-center gap-1.5" data-cat="ac" style="background:rgba(232,121,249,0.2);border:1px solid rgba(232,121,249,0.4);">
+                <span class="legend-dot" style="background:rgba(232,121,249,0.6);"></span><span data-i18n="ac">Actinit</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ========== PERIODIC TABLE ========== -->
+    <main class="max-w-[1400px] mx-auto px-4 py-4">
+        <div class="overflow-x-auto pb-4 -mx-4 px-4">
+            <div class="pt-grid" id="periodic-table">
+                <!-- Elements rendered by JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- ========== ELEMENT DETAIL MODAL ========== -->
+    <div class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md" id="element-modal">
+        <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col border border-gray-200/80 dark:border-slate-700/80 overflow-hidden">
+            <!-- Modal Header -->
+            <div id="modal-header" class="px-5 sm:px-6 py-4 sm:py-5 relative text-white transition-all duration-300">
+                <button onclick="closeModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all shadow" title="Đóng">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+                <div class="flex items-center gap-4 sm:gap-5">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg flex-shrink-0">
+                        <span class="text-3xl sm:text-4xl font-black text-white tracking-tight" id="modal-symbol"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/25 text-white backdrop-blur-sm" id="modal-number"></span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-white/90" id="modal-category-badge"></span>
+                        </div>
+                        <div class="text-xl sm:text-3xl font-extrabold text-white mt-1 leading-tight" id="modal-name"></div>
+                        <div class="text-white/80 text-xs sm:text-sm font-medium" id="modal-name-alt"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body: 2 Columns on desktop -->
+            <div class="p-4 sm:p-5 md:p-6 overflow-y-auto space-y-5 flex-1">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    
+                    <!-- LEFT: 3D Electron Simulation -->
+                    <div class="lg:col-span-7 flex flex-col bg-slate-950 rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative">
+                        <!-- 3D Header & Controls Bar -->
+                        <div class="px-3.5 py-2.5 bg-slate-900/95 border-b border-slate-800/80 flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <h3 class="text-xs font-bold text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+                                    <i class="fa-solid fa-atom text-indigo-400"></i>
+                                    <span data-i18n="sim_3d_title">Mô phỏng Electron 3D</span>
+                                </h3>
+                            </div>
+                            <!-- Simulation Action Buttons -->
+                            <div class="flex items-center gap-1.5">
+                                <button id="btn-sim-pause" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1 transition-all" title="Tạm dừng / Tiếp tục">
+                                    <i class="fa-solid fa-pause text-[11px]" id="sim-pause-icon"></i>
+                                </button>
+                                <button id="btn-sim-speed" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold border border-slate-700 flex items-center gap-1 transition-all" title="Tốc độ quỹ đạo">
+                                    <span id="sim-speed-text">1.0x</span>
+                                </button>
+                                <button id="btn-sim-reset" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1 transition-all" title="Đặt lại góc nhìn">
+                                    <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3D Viewport Canvas Container -->
+                        <div id="atom-3d-container" class="w-full h-[260px] sm:h-[300px] relative select-none cursor-grab active:cursor-grabbing bg-radial-gradient">
+                            <!-- Canvas injected by Three.js -->
+                        </div>
+
+                        <!-- 3D Footer: Shells & Drag Hint -->
+                        <div class="p-3 bg-slate-900/95 border-t border-slate-800/80 space-y-2">
+                            <div class="flex items-center justify-between text-[11px] text-slate-400">
+                                <span class="font-medium flex items-center gap-1">
+                                    <i class="fa-solid fa-layer-group text-indigo-400"></i>
+                                    <span data-i18n="shells_label">Lớp electron (K, L, M, N...):</span>
+                                </span>
+                                <span id="atom-total-electrons" class="font-bold text-indigo-300"></span>
+                            </div>
+                            <div id="atom-shell-badges" class="flex flex-wrap gap-1.5">
+                                <!-- Shell badges rendered by JS -->
+                            </div>
+                            <div class="text-[10px] text-slate-400 text-center flex items-center justify-center gap-2 pt-1">
+                                <span><i class="fa-solid fa-hand-pointer mr-1"></i>Kéo để xoay 3D</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-arrows-up-down mr-1"></i>Cuộn chuột phóng to</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Element Attributes & Details -->
+                    <div class="lg:col-span-5 flex flex-col justify-between space-y-3">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="bg-gray-50 dark:bg-slate-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-slate-700/80">
+                                <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold" data-i18n="mass_label">Khối lượng nguyên tử</div>
+                                <div class="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5" id="modal-mass"></div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-slate-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-slate-700/80">
+                                <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold" data-i18n="cat_label">Nhóm nguyên tố</div>
+                                <div class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-0.5" id="modal-category"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-slate-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-slate-700/80">
+                            <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold" data-i18n="config_label">Cấu hình electron</div>
+                            <div class="text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-1 break-all" id="modal-config"></div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-slate-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-slate-700/80">
+                            <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold" data-i18n="shells_summary_label">Phân bố theo lớp</div>
+                            <div class="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5 font-mono" id="modal-shells-summary"></div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-slate-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-slate-700/80 flex-1">
+                            <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold" data-i18n="desc_label">Ứng dụng & Thông tin</div>
+                            <div class="text-xs sm:text-sm mt-1 leading-relaxed text-slate-700 dark:text-slate-300 font-normal" id="modal-desc"></div>
+                        </div>
+
+                        <!-- Previous / Next Element quick navigation -->
+                        <div class="flex items-center justify-between pt-1">
+                            <button id="btn-prev-el" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                                <span data-i18n="prev_el">Trước</span>
+                            </button>
+                            <button id="btn-next-el" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-all">
+                                <span data-i18n="next_el">Sau</span>
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== CREDITS MODAL ========== -->
+    <div class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" id="credits-modal">
+        <div class="modal-content bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white relative">
+                <button onclick="closeCredits()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-users text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold" data-i18n="credits_title">Thành Viên Nhóm</h2>
+                        <p class="text-white/70 text-sm" data-i18n="credits_sub">Đội ngũ phát triển</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="credit-card rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/25">T</div>
+                    <div>
+                        <div class="font-bold text-gray-800 dark:text-white">Nguyễn Trần Huy Tiến</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400" data-i18n="role_member">Thành viên</div>
+                    </div>
+                    <i class="fa-solid fa-star text-amber-400 ml-auto"></i>
+                </div>
+                <div class="credit-card rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cyan-500/25">K</div>
+                    <div>
+                        <div class="font-bold text-gray-800 dark:text-white">Nguyễn Hữu Phúc Khang</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400" data-i18n="role_member">Thành viên</div>
+                    </div>
+                    <i class="fa-solid fa-star text-amber-400 ml-auto"></i>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-400 dark:text-gray-500" data-i18n="credits_footer">© 2026 • Dự án Bảng Tuần Hoàn Tương Tác</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="text-center py-6 text-xs text-gray-400 dark:text-gray-600">
+        <p data-i18n="footer_text">Bảng Tuần Hoàn Hóa Học Tương Tác • 118 Nguyên Tố</p>
+    </footer>
+
+<script>
+// ============================================================
+// DATA: All 118 Elements
+// n=number, s=symbol, en=English name, vi=Vietnamese name,
+// m=mass, ec=electron config, cat=category, r=row, c=column,
+// den=description EN, dvi=description VI
+// ============================================================
+const elements = [
+// Period 1
+{n:1,s:'H',en:'Hydrogen',vi:'Hiđro',m:'1.008',ec:'1s¹',cat:'nm',r:1,c:1,
+ den:'The lightest and most abundant element in the universe. Used in fuel cells, ammonia production, and as rocket fuel.',
+ dvi:'Nguyên tố nhẹ nhất và phổ biến nhất trong vũ trụ. Được dùng trong pin nhiên liệu, sản xuất amoniac và làm nhiên liệu tên lửa.'},
+{n:2,s:'He',en:'Helium',vi:'Heli',m:'4.003',ec:'1s²',cat:'ng',r:1,c:18,
+ den:'Second lightest element. Used in cryogenics, balloons, and as a protective gas in welding.',
+ dvi:'Nguyên tố nhẹ thứ hai. Dùng trong đông lạnh sâu, bóng bay và làm khí bảo vệ khi hàn.'},
+// Period 2
+{n:3,s:'Li',en:'Lithium',vi:'Liti',m:'6.941',ec:'[He] 2s¹',cat:'am',r:2,c:1,
+ den:'Lightest metal. Essential for rechargeable batteries, mood-stabilizing drugs, and lightweight alloys.',
+ dvi:'Kim loại nhẹ nhất. Thiết yếu cho pin sạc, thuốc ổn định tâm trạng và hợp kim nhẹ.'},
+{n:4,s:'Be',en:'Beryllium',vi:'Berili',m:'9.012',ec:'[He] 2s²',cat:'ae',r:2,c:2,
+ den:'A lightweight, strong metal used in aerospace, X-ray windows, and nuclear reactors.',
+ dvi:'Kim loại nhẹ, cứng, dùng trong hàng không vũ trụ, cửa sổ tia X và lò phản ứng hạt nhân.'},
+{n:5,s:'B',en:'Boron',vi:'Bo',m:'10.81',ec:'[He] 2s² 2p¹',cat:'ml',r:2,c:13,
+ den:'A metalloid used in borosilicate glass, detergents, and as a semiconductor dopant.',
+ dvi:'Á kim dùng trong kính borosilicat, chất tẩy rửa và làm chất pha tạp bán dẫn.'},
+{n:6,s:'C',en:'Carbon',vi:'Cacbon',m:'12.01',ec:'[He] 2s² 2p²',cat:'nm',r:2,c:14,
+ den:'Basis of all organic life. Found as diamond, graphite, and graphene. Essential in steel and fuels.',
+ dvi:'Cơ sở của mọi sự sống hữu cơ. Tồn tại dạng kim cương, than chì, graphene. Thiết yếu trong thép và nhiên liệu.'},
+{n:7,s:'N',en:'Nitrogen',vi:'Nitơ',m:'14.01',ec:'[He] 2s² 2p³',cat:'nm',r:2,c:15,
+ den:'Makes up 78% of Earth\'s atmosphere. Used in fertilizers, explosives, and food preservation.',
+ dvi:'Chiếm 78% khí quyển Trái Đất. Dùng trong phân bón, thuốc nổ và bảo quản thực phẩm.'},
+{n:8,s:'O',en:'Oxygen',vi:'Oxi',m:'16.00',ec:'[He] 2s² 2p⁴',cat:'nm',r:2,c:16,
+ den:'Essential for respiration and combustion. Makes up 21% of Earth\'s atmosphere and most of water\'s mass.',
+ dvi:'Thiết yếu cho hô hấp và sự cháy. Chiếm 21% khí quyển Trái Đất và phần lớn khối lượng nước.'},
+{n:9,s:'F',en:'Fluorine',vi:'Flo',m:'19.00',ec:'[He] 2s² 2p⁵',cat:'hl',r:2,c:17,
+ den:'Most reactive element. Used in toothpaste (fluoride), Teflon coatings, and uranium enrichment.',
+ dvi:'Nguyên tố hoạt động mạnh nhất. Dùng trong kem đánh răng (fluoride), lớp phủ Teflon và làm giàu uranium.'},
+{n:10,s:'Ne',en:'Neon',vi:'Neon',m:'20.18',ec:'[He] 2s² 2p⁶',cat:'ng',r:2,c:18,
+ den:'A noble gas famous for bright reddish-orange glow in neon signs. Also used in lasers.',
+ dvi:'Khí hiếm nổi tiếng với ánh sáng đỏ cam trong đèn neon. Cũng được dùng trong laser.'},
+// Period 3
+{n:11,s:'Na',en:'Sodium',vi:'Natri',m:'22.99',ec:'[Ne] 3s¹',cat:'am',r:3,c:1,
+ den:'A soft, highly reactive alkali metal. Essential nutrient (as NaCl salt). Used in streetlights and chemical synthesis.',
+ dvi:'Kim loại kiềm mềm, hoạt động mạnh. Dinh dưỡng thiết yếu (muối NaCl). Dùng trong đèn đường và tổng hợp hóa học.'},
+{n:12,s:'Mg',en:'Magnesium',vi:'Magiê',m:'24.31',ec:'[Ne] 3s²',cat:'ae',r:3,c:2,
+ den:'Lightweight structural metal used in alloys, fireworks, and as a dietary supplement.',
+ dvi:'Kim loại cấu trúc nhẹ dùng trong hợp kim, pháo hoa và bổ sung dinh dưỡng.'},
+{n:13,s:'Al',en:'Aluminium',vi:'Nhôm',m:'26.98',ec:'[Ne] 3s² 3p¹',cat:'pt',r:3,c:13,
+ den:'Most abundant metal in Earth\'s crust. Used in packaging, construction, aerospace, and electronics.',
+ dvi:'Kim loại phổ biến nhất trong vỏ Trái Đất. Dùng trong bao bì, xây dựng, hàng không và điện tử.'},
+{n:14,s:'Si',en:'Silicon',vi:'Silic',m:'28.09',ec:'[Ne] 3s² 3p²',cat:'ml',r:3,c:14,
+ den:'Second most abundant element in Earth\'s crust. Backbone of the semiconductor industry and solar cells.',
+ dvi:'Nguyên tố phổ biến thứ hai trong vỏ Trái Đất. Xương sống của ngành công nghiệp bán dẫn và pin mặt trời.'},
+{n:15,s:'P',en:'Phosphorus',vi:'Phốtpho',m:'30.97',ec:'[Ne] 3s² 3p³',cat:'nm',r:3,c:15,
+ den:'Essential for life (DNA, ATP). Used in fertilizers, detergents, matches, and steel production.',
+ dvi:'Thiết yếu cho sự sống (ADN, ATP). Dùng trong phân bón, chất tẩy rửa, diêm và sản xuất thép.'},
+{n:16,s:'S',en:'Sulfur',vi:'Lưu huỳnh',m:'32.06',ec:'[Ne] 3s² 3p⁴',cat:'nm',r:3,c:16,
+ den:'Known since ancient times. Used in sulfuric acid production, vulcanization of rubber, and fungicides.',
+ dvi:'Được biết đến từ thời cổ đại. Dùng trong sản xuất axit sunfuric, lưu hóa cao su và thuốc diệt nấm.'},
+{n:17,s:'Cl',en:'Chlorine',vi:'Clo',m:'35.45',ec:'[Ne] 3s² 3p⁵',cat:'hl',r:3,c:17,
+ den:'A reactive halogen used in water purification, PVC plastic production, and disinfectants.',
+ dvi:'Halogen hoạt động mạnh dùng trong khử trùng nước, sản xuất nhựa PVC và chất khử trùng.'},
+{n:18,s:'Ar',en:'Argon',vi:'Argon',m:'39.95',ec:'[Ne] 3s² 3p⁶',cat:'ng',r:3,c:18,
+ den:'Most abundant noble gas on Earth. Used in welding shields, light bulbs, and as a laboratory inert gas.',
+ dvi:'Khí hiếm phổ biến nhất trên Trái Đất. Dùng trong hàn, bóng đèn và làm khí trơ trong phòng thí nghiệm.'},
+// Period 4
+{n:19,s:'K',en:'Potassium',vi:'Kali',m:'39.10',ec:'[Ar] 4s¹',cat:'am',r:4,c:1,
+ den:'Essential nutrient for nerve and muscle function. Used in fertilizers, soap, and glass production.',
+ dvi:'Dinh dưỡng thiết yếu cho chức năng thần kinh và cơ bắp. Dùng trong phân bón, xà phòng và sản xuất thủy tinh.'},
+{n:20,s:'Ca',en:'Calcium',vi:'Canxi',m:'40.08',ec:'[Ar] 4s²',cat:'ae',r:4,c:2,
+ den:'Fifth most abundant element. Essential for bones and teeth. Used in cement, steel, and cheese-making.',
+ dvi:'Nguyên tố phổ biến thứ năm. Thiết yếu cho xương và răng. Dùng trong xi măng, thép và sản xuất phô mai.'},
+{n:21,s:'Sc',en:'Scandium',vi:'Scandi',m:'44.96',ec:'[Ar] 3d¹ 4s²',cat:'tm',r:4,c:3,
+ den:'A light transition metal used in aluminum-scandium alloys for aerospace and sports equipment.',
+ dvi:'Kim loại chuyển tiếp nhẹ dùng trong hợp kim nhôm-scandi cho hàng không và thiết bị thể thao.'},
+{n:22,s:'Ti',en:'Titanium',vi:'Titan',m:'47.87',ec:'[Ar] 3d² 4s²',cat:'tm',r:4,c:4,
+ den:'Strong, lightweight, corrosion-resistant. Used in aerospace, medical implants, and pigments (TiO₂).',
+ dvi:'Cứng, nhẹ, chống ăn mòn. Dùng trong hàng không, cấy ghép y tế và chất màu (TiO₂).'},
+{n:23,s:'V',en:'Vanadium',vi:'Vanadi',m:'50.94',ec:'[Ar] 3d³ 4s²',cat:'tm',r:4,c:5,
+ den:'Used to make strong steel alloys for tools, springs, and jet engines.',
+ dvi:'Dùng để tạo hợp kim thép cứng cho dụng cụ, lò xo và động cơ phản lực.'},
+{n:24,s:'Cr',en:'Chromium',vi:'Crom',m:'52.00',ec:'[Ar] 3d⁵ 4s¹',cat:'tm',r:4,c:6,
+ den:'Known for its shiny appearance. Used in stainless steel, chrome plating, and pigments.',
+ dvi:'Nổi tiếng với vẻ ngoài sáng bóng. Dùng trong thép không gỉ, mạ crom và chất màu.'},
+{n:25,s:'Mn',en:'Manganese',vi:'Mangan',m:'54.94',ec:'[Ar] 3d⁵ 4s²',cat:'tm',r:4,c:7,
+ den:'Essential for steel production (removes sulfur). Also used in dry cell batteries.',
+ dvi:'Thiết yếu cho sản xuất thép (loại bỏ lưu huỳnh). Cũng dùng trong pin khô.'},
+{n:26,s:'Fe',en:'Iron',vi:'Sắt',m:'55.85',ec:'[Ar] 3d⁶ 4s²',cat:'tm',r:4,c:8,
+ den:'Most used metal worldwide. Core component of steel. Essential for hemoglobin in blood.',
+ dvi:'Kim loại được sử dụng nhiều nhất thế giới. Thành phần chính của thép. Thiết yếu cho hemoglobin trong máu.'},
+{n:27,s:'Co',en:'Cobalt',vi:'Coban',m:'58.93',ec:'[Ar] 3d⁷ 4s²',cat:'tm',r:4,c:9,
+ den:'Used in lithium-ion batteries, blue pigments, and superalloys for jet engines.',
+ dvi:'Dùng trong pin lithium-ion, chất màu xanh và siêu hợp kim cho động cơ phản lực.'},
+{n:28,s:'Ni',en:'Nickel',vi:'Niken',m:'58.69',ec:'[Ar] 3d⁸ 4s²',cat:'tm',r:4,c:10,
+ den:'Corrosion-resistant metal used in stainless steel, coins, batteries, and electroplating.',
+ dvi:'Kim loại chống ăn mòn dùng trong thép không gỉ, tiền xu, pin và mạ điện.'},
+{n:29,s:'Cu',en:'Copper',vi:'Đồng',m:'63.55',ec:'[Ar] 3d¹⁰ 4s¹',cat:'tm',r:4,c:11,
+ den:'Excellent electrical conductor. Used in wiring, plumbing, electronics, and architecture since antiquity.',
+ dvi:'Dẫn điện tuyệt vời. Dùng trong dây điện, ống nước, điện tử và kiến trúc từ thời cổ đại.'},
+{n:30,s:'Zn',en:'Zinc',vi:'Kẽm',m:'65.38',ec:'[Ar] 3d¹⁰ 4s²',cat:'tm',r:4,c:12,
+ den:'Used to galvanize steel against rust. Essential trace element for immune function. Used in batteries.',
+ dvi:'Dùng để mạ kẽm thép chống gỉ. Vi lượng thiết yếu cho miễn dịch. Dùng trong pin.'},
+{n:31,s:'Ga',en:'Gallium',vi:'Gali',m:'69.72',ec:'[Ar] 3d¹⁰ 4s² 4p¹',cat:'pt',r:4,c:13,
+ den:'Melts near body temperature. Used in semiconductors (GaAs), LEDs, and solar panels.',
+ dvi:'Nóng chảy gần nhiệt độ cơ thể. Dùng trong bán dẫn (GaAs), đèn LED và tấm pin mặt trời.'},
+{n:32,s:'Ge',en:'Germanium',vi:'Gemani',m:'72.63',ec:'[Ar] 3d¹⁰ 4s² 4p²',cat:'ml',r:4,c:14,
+ den:'An important semiconductor. Used in fiber optics, infrared optics, and transistors.',
+ dvi:'Chất bán dẫn quan trọng. Dùng trong sợi quang, quang học hồng ngoại và transistor.'},
+{n:33,s:'As',en:'Arsenic',vi:'Asen',m:'74.92',ec:'[Ar] 3d¹⁰ 4s² 4p³',cat:'ml',r:4,c:15,
+ den:'A toxic metalloid historically used as a poison. Now used in semiconductors and wood preservatives.',
+ dvi:'Á kim độc, từng được dùng làm chất độc. Hiện dùng trong bán dẫn và bảo quản gỗ.'},
+{n:34,s:'Se',en:'Selenium',vi:'Selen',m:'78.97',ec:'[Ar] 3d¹⁰ 4s² 4p⁴',cat:'nm',r:4,c:16,
+ den:'Essential trace element. Used in electronics, glass production, and as a dietary supplement.',
+ dvi:'Vi lượng thiết yếu. Dùng trong điện tử, sản xuất thủy tinh và bổ sung dinh dưỡng.'},
+{n:35,s:'Br',en:'Bromine',vi:'Brom',m:'79.90',ec:'[Ar] 3d¹⁰ 4s² 4p⁵',cat:'hl',r:4,c:17,
+ den:'One of two liquid elements at room temperature. Used in flame retardants and pharmaceuticals.',
+ dvi:'Một trong hai nguyên tố lỏng ở nhiệt độ phòng. Dùng trong chất chống cháy và dược phẩm.'},
+{n:36,s:'Kr',en:'Krypton',vi:'Kripton',m:'83.80',ec:'[Ar] 3d¹⁰ 4s² 4p⁶',cat:'ng',r:4,c:18,
+ den:'A noble gas used in high-performance lighting, flash photography, and some fluorescent lamps.',
+ dvi:'Khí hiếm dùng trong chiếu sáng hiệu suất cao, đèn flash và một số đèn huỳnh quang.'},
+// Period 5
+{n:37,s:'Rb',en:'Rubidium',vi:'Rubiđi',m:'85.47',ec:'[Kr] 5s¹',cat:'am',r:5,c:1,
+ den:'A soft, silvery alkali metal used in atomic clocks, specialty glass, and photocells.',
+ dvi:'Kim loại kiềm mềm, bạc dùng trong đồng hồ nguyên tử, thủy tinh đặc biệt và tế bào quang điện.'},
+{n:38,s:'Sr',en:'Strontium',vi:'Stronti',m:'87.62',ec:'[Kr] 5s²',cat:'ae',r:5,c:2,
+ den:'Used in fireworks (red color), ferrite magnets, and strontium-90 in nuclear medicine.',
+ dvi:'Dùng trong pháo hoa (màu đỏ), nam châm ferit và strontium-90 trong y học hạt nhân.'},
+{n:39,s:'Y',en:'Yttrium',vi:'Ytri',m:'88.91',ec:'[Kr] 4d¹ 5s²',cat:'tm',r:5,c:3,
+ den:'Used in LEDs, superconductors, and cancer treatment drugs. Named after Ytterby village in Sweden.',
+ dvi:'Dùng trong đèn LED, siêu dẫn và thuốc điều trị ung thư. Đặt theo tên làng Ytterby ở Thụy Điển.'},
+{n:40,s:'Zr',en:'Zirconium',vi:'Zirconi',m:'91.22',ec:'[Kr] 4d² 5s²',cat:'tm',r:5,c:4,
+ den:'Corrosion-resistant metal used in nuclear reactor cladding, ceramics, and dental implants.',
+ dvi:'Kim loại chống ăn mòn dùng trong vỏ lò phản ứng hạt nhân, gốm sứ và cấy ghép nha khoa.'},
+{n:41,s:'Nb',en:'Niobium',vi:'Niobi',m:'92.91',ec:'[Kr] 4d⁴ 5s¹',cat:'tm',r:5,c:5,
+ den:'Used in superconducting magnets (MRI, particle accelerators) and high-strength steel alloys.',
+ dvi:'Dùng trong nam châm siêu dẫn (MRI, máy gia tốc hạt) và hợp kim thép cường độ cao.'},
+{n:42,s:'Mo',en:'Molybdenum',vi:'Molipđen',m:'95.95',ec:'[Kr] 4d⁵ 5s¹',cat:'tm',r:5,c:6,
+ den:'High melting point metal used in steel alloys, catalysts, and lubricants.',
+ dvi:'Kim loại có điểm nóng chảy cao, dùng trong hợp kim thép, chất xúc tác và chất bôi trơn.'},
+{n:43,s:'Tc',en:'Technetium',vi:'Tecnexi',m:'(97)',ec:'[Kr] 4d⁵ 5s²',cat:'tm',r:5,c:7,
+ den:'First artificially produced element. Tc-99m is widely used in medical diagnostic imaging.',
+ dvi:'Nguyên tố nhân tạo đầu tiên. Tc-99m được sử dụng rộng rãi trong chẩn đoán hình ảnh y tế.'},
+{n:44,s:'Ru',en:'Ruthenium',vi:'Ruteni',m:'101.1',ec:'[Kr] 4d⁷ 5s¹',cat:'tm',r:5,c:8,
+ den:'A rare platinum group metal used in electronic chip resistors and catalytic coatings.',
+ dvi:'Kim loại nhóm platin hiếm, dùng trong điện trở chip điện tử và lớp phủ xúc tác.'},
+{n:45,s:'Rh',en:'Rhodium',vi:'Rođi',m:'102.9',ec:'[Kr] 4d⁸ 5s¹',cat:'tm',r:5,c:9,
+ den:'Extremely rare and valuable. Used in catalytic converters, jewelry, and search lights.',
+ dvi:'Cực kỳ hiếm và quý. Dùng trong bộ chuyển đổi xúc tác, trang sức và đèn rọi.'},
+{n:46,s:'Pd',en:'Palladium',vi:'Palađi',m:'106.4',ec:'[Kr] 4d¹⁰',cat:'tm',r:5,c:10,
+ den:'Key catalyst in catalytic converters and chemical reactions. Used in electronics and dentistry.',
+ dvi:'Chất xúc tác chính trong bộ chuyển đổi xúc tác và phản ứng hóa học. Dùng trong điện tử và nha khoa.'},
+{n:47,s:'Ag',en:'Silver',vi:'Bạc',m:'107.9',ec:'[Kr] 4d¹⁰ 5s¹',cat:'tm',r:5,c:11,
+ den:'Best electrical and thermal conductor. Used in jewelry, photography, electronics, and antibacterials.',
+ dvi:'Dẫn điện và nhiệt tốt nhất. Dùng trong trang sức, nhiếp ảnh, điện tử và chất kháng khuẩn.'},
+{n:48,s:'Cd',en:'Cadmium',vi:'Cađimi',m:'112.4',ec:'[Kr] 4d¹⁰ 5s²',cat:'tm',r:5,c:12,
+ den:'Toxic heavy metal used in NiCd batteries, pigments, and nuclear reactor control rods.',
+ dvi:'Kim loại nặng độc, dùng trong pin NiCd, chất màu và thanh điều khiển lò phản ứng hạt nhân.'},
+{n:49,s:'In',en:'Indium',vi:'Inđi',m:'114.8',ec:'[Kr] 4d¹⁰ 5s² 5p¹',cat:'pt',r:5,c:13,
+ den:'Soft metal used in touchscreen displays (ITO), solders, and semiconductor compounds.',
+ dvi:'Kim loại mềm dùng trong màn hình cảm ứng (ITO), hàn và hợp chất bán dẫn.'},
+{n:50,s:'Sn',en:'Tin',vi:'Thiếc',m:'118.7',ec:'[Kr] 4d¹⁰ 5s² 5p²',cat:'pt',r:5,c:14,
+ den:'Known since antiquity (Bronze Age). Used in tin cans, solder, and alloys like bronze and pewter.',
+ dvi:'Đã biết từ thời cổ đại (Thời đại Đồ đồng). Dùng trong hộp thiếc, hàn và hợp kim như đồng thiếc.'},
+{n:51,s:'Sb',en:'Antimony',vi:'Antimon',m:'121.8',ec:'[Kr] 4d¹⁰ 5s² 5p³',cat:'ml',r:5,c:15,
+ den:'A metalloid used in flame retardants, lead-acid batteries, and semiconductor materials.',
+ dvi:'Á kim dùng trong chất chống cháy, pin chì-axit và vật liệu bán dẫn.'},
+{n:52,s:'Te',en:'Tellurium',vi:'Telua',m:'127.6',ec:'[Kr] 4d¹⁰ 5s² 5p⁴',cat:'ml',r:5,c:16,
+ den:'A rare metalloid used in solar cells (CdTe), thermoelectric devices, and rubber vulcanization.',
+ dvi:'Á kim hiếm dùng trong pin mặt trời (CdTe), thiết bị nhiệt điện và lưu hóa cao su.'},
+{n:53,s:'I',en:'Iodine',vi:'Iot',m:'126.9',ec:'[Kr] 4d¹⁰ 5s² 5p⁵',cat:'hl',r:5,c:17,
+ den:'Essential for thyroid hormones. Used in disinfectants, photography, and iodized salt.',
+ dvi:'Thiết yếu cho hormone tuyến giáp. Dùng trong chất khử trùng, nhiếp ảnh và muối iot.'},
+{n:54,s:'Xe',en:'Xenon',vi:'Xenon',m:'131.3',ec:'[Kr] 4d¹⁰ 5s² 5p⁶',cat:'ng',r:5,c:18,
+ den:'A noble gas used in high-intensity lamps, ion propulsion engines, and medical imaging.',
+ dvi:'Khí hiếm dùng trong đèn cường độ cao, động cơ đẩy ion và chẩn đoán hình ảnh y tế.'},
+// Period 6
+{n:55,s:'Cs',en:'Caesium',vi:'Xesi',m:'132.9',ec:'[Xe] 6s¹',cat:'am',r:6,c:1,
+ den:'Most electropositive stable element. Used in atomic clocks (defining the second) and photoelectric cells.',
+ dvi:'Nguyên tố bền có tính điện dương nhất. Dùng trong đồng hồ nguyên tử (định nghĩa giây) và tế bào quang điện.'},
+{n:56,s:'Ba',en:'Barium',vi:'Bari',m:'137.3',ec:'[Xe] 6s²',cat:'ae',r:6,c:2,
+ den:'Used in barium meals for X-ray imaging, drilling fluids, and fireworks (green color).',
+ dvi:'Dùng trong bữa ăn bari cho chụp X-quang, dung dịch khoan và pháo hoa (màu xanh lá).'},
+// Lanthanides (row 9, cols 3-17)
+{n:57,s:'La',en:'Lanthanum',vi:'Lantan',m:'138.9',ec:'[Xe] 5d¹ 6s²',cat:'ln',r:9,c:3,
+ den:'First lanthanide. Used in camera lenses, studio lighting, and hydrogen storage alloys.',
+ dvi:'Lantanit đầu tiên. Dùng trong ống kính máy ảnh, đèn studio và hợp kim lưu trữ hiđro.'},
+{n:58,s:'Ce',en:'Cerium',vi:'Xeri',m:'140.1',ec:'[Xe] 4f¹ 5d¹ 6s²',cat:'ln',r:9,c:4,
+ den:'Most abundant rare earth. Used in catalytic converters, self-cleaning ovens, and lighter flints.',
+ dvi:'Đất hiếm phổ biến nhất. Dùng trong bộ chuyển đổi xúc tác, lò tự làm sạch và đá lửa bật lửa.'},
+{n:59,s:'Pr',en:'Praseodymium',vi:'Praseođim',m:'140.9',ec:'[Xe] 4f³ 6s²',cat:'ln',r:9,c:5,
+ den:'Used in strong permanent magnets, aircraft engines, and green/yellow glass coloring.',
+ dvi:'Dùng trong nam châm vĩnh cửu mạnh, động cơ máy bay và tạo màu thủy tinh xanh/vàng.'},
+{n:60,s:'Nd',en:'Neodymium',vi:'Neođim',m:'144.2',ec:'[Xe] 4f⁴ 6s²',cat:'ln',r:9,c:6,
+ den:'Key component of powerful NdFeB magnets used in hard drives, headphones, and electric motors.',
+ dvi:'Thành phần chính của nam châm NdFeB mạnh, dùng trong ổ cứng, tai nghe và động cơ điện.'},
+{n:61,s:'Pm',en:'Promethium',vi:'Prometi',m:'(145)',ec:'[Xe] 4f⁵ 6s²',cat:'ln',r:9,c:7,
+ den:'Only radioactive lanthanide with no stable isotopes. Used in luminous paint and nuclear batteries.',
+ dvi:'Lantanit phóng xạ duy nhất không có đồng vị bền. Dùng trong sơn phát quang và pin hạt nhân.'},
+{n:62,s:'Sm',en:'Samarium',vi:'Samari',m:'150.4',ec:'[Xe] 4f⁶ 6s²',cat:'ln',r:9,c:8,
+ den:'Used in samarium-cobalt magnets, cancer treatment, and nuclear reactor control rods.',
+ dvi:'Dùng trong nam châm samari-coban, điều trị ung thư và thanh điều khiển lò phản ứng hạt nhân.'},
+{n:63,s:'Eu',en:'Europium',vi:'Europi',m:'152.0',ec:'[Xe] 4f⁷ 6s²',cat:'ln',r:9,c:9,
+ den:'Most reactive rare earth element. Used in red/blue phosphors for displays and euro banknote security.',
+ dvi:'Đất hiếm hoạt động mạnh nhất. Dùng trong chất lân quang đỏ/xanh cho màn hình và bảo mật tiền euro.'},
+{n:64,s:'Gd',en:'Gadolinium',vi:'Gađolini',m:'157.3',ec:'[Xe] 4f⁷ 5d¹ 6s²',cat:'ln',r:9,c:10,
+ den:'Used as MRI contrast agent and in nuclear reactor shielding. Has unusual magnetic properties.',
+ dvi:'Dùng làm chất tương phản MRI và che chắn lò phản ứng hạt nhân. Có tính chất từ bất thường.'},
+{n:65,s:'Tb',en:'Terbium',vi:'Terbi',m:'158.9',ec:'[Xe] 4f⁹ 6s²',cat:'ln',r:9,c:11,
+ den:'Used in green phosphors for displays, solid-state devices, and fuel cell stabilizers.',
+ dvi:'Dùng trong chất lân quang xanh cho màn hình, thiết bị bán dẫn và chất ổn định pin nhiên liệu.'},
+{n:66,s:'Dy',en:'Dysprosium',vi:'Đysprosi',m:'162.5',ec:'[Xe] 4f¹⁰ 6s²',cat:'ln',r:9,c:12,
+ den:'Used in neodymium magnets to improve heat resistance. Also in data storage and nuclear reactors.',
+ dvi:'Dùng trong nam châm neođim để tăng khả năng chịu nhiệt. Cũng dùng trong lưu trữ dữ liệu.'},
+{n:67,s:'Ho',en:'Holmium',vi:'Honmi',m:'164.9',ec:'[Xe] 4f¹¹ 6s²',cat:'ln',r:9,c:13,
+ den:'Has the highest magnetic moment of any element. Used in lasers for eye and kidney surgery.',
+ dvi:'Có mô men từ cao nhất trong các nguyên tố. Dùng trong laser phẫu thuật mắt và thận.'},
+{n:68,s:'Er',en:'Erbium',vi:'Erbi',m:'167.3',ec:'[Xe] 4f¹² 6s²',cat:'ln',r:9,c:14,
+ den:'Used in fiber optic amplifiers, lasers for dermatology, and pink glass/ceramic coloring.',
+ dvi:'Dùng trong bộ khuếch đại sợi quang, laser da liễu và tạo màu hồng cho thủy tinh/gốm.'},
+{n:69,s:'Tm',en:'Thulium',vi:'Tuli',m:'168.9',ec:'[Xe] 4f¹³ 6s²',cat:'ln',r:9,c:15,
+ den:'Least abundant lanthanide. Used in portable X-ray machines and high-temperature superconductors.',
+ dvi:'Lantanit ít phổ biến nhất. Dùng trong máy X-quang di động và siêu dẫn nhiệt độ cao.'},
+{n:70,s:'Yb',en:'Ytterbium',vi:'Ytterbi',m:'173.0',ec:'[Xe] 4f¹⁴ 6s²',cat:'ln',r:9,c:16,
+ den:'Used in stress gauges, improving stainless steel properties, and as a doping agent in fiber optics.',
+ dvi:'Dùng trong máy đo ứng suất, cải thiện tính chất thép không gỉ và chất pha tạp sợi quang.'},
+{n:71,s:'Lu',en:'Lutetium',vi:'Luteti',m:'175.0',ec:'[Xe] 4f¹⁴ 5d¹ 6s²',cat:'ln',r:9,c:17,
+ den:'Last lanthanide. Used in PET scan detectors, petroleum refining catalysts, and LED phosphors.',
+ dvi:'Lantanit cuối cùng. Dùng trong đầu dò PET scan, xúc tác lọc dầu và chất lân quang LED.'},
+// Period 6 continued
+{n:72,s:'Hf',en:'Hafnium',vi:'Hafni',m:'178.5',ec:'[Xe] 4f¹⁴ 5d² 6s²',cat:'tm',r:6,c:4,
+ den:'Used in nuclear reactor control rods, high-temperature alloys, and advanced microprocessors.',
+ dvi:'Dùng trong thanh điều khiển lò phản ứng hạt nhân, hợp kim chịu nhiệt và vi xử lý tiên tiến.'},
+{n:73,s:'Ta',en:'Tantalum',vi:'Tantan',m:'180.9',ec:'[Xe] 4f¹⁴ 5d³ 6s²',cat:'tm',r:6,c:5,
+ den:'Highly corrosion-resistant. Used in electronic capacitors, surgical instruments, and jet engines.',
+ dvi:'Chống ăn mòn cao. Dùng trong tụ điện, dụng cụ phẫu thuật và động cơ phản lực.'},
+{n:74,s:'W',en:'Tungsten',vi:'Vonfram',m:'183.8',ec:'[Xe] 4f¹⁴ 5d⁴ 6s²',cat:'tm',r:6,c:6,
+ den:'Highest melting point of all elements. Used in light bulb filaments, cutting tools, and ammunition.',
+ dvi:'Có điểm nóng chảy cao nhất trong mọi nguyên tố. Dùng trong dây tóc bóng đèn, dụng cụ cắt và đạn.'},
+{n:75,s:'Re',en:'Rhenium',vi:'Reni',m:'186.2',ec:'[Xe] 4f¹⁴ 5d⁵ 6s²',cat:'tm',r:6,c:7,
+ den:'One of the rarest elements. Used in jet engine superalloys and high-octane gasoline catalysts.',
+ dvi:'Một trong những nguyên tố hiếm nhất. Dùng trong siêu hợp kim động cơ phản lực và xúc tác xăng.'},
+{n:76,s:'Os',en:'Osmium',vi:'Osmi',m:'190.2',ec:'[Xe] 4f¹⁴ 5d⁶ 6s²',cat:'tm',r:6,c:8,
+ den:'Densest naturally occurring element. Used in fountain pen tips, electrical contacts, and catalysis.',
+ dvi:'Nguyên tố tự nhiên đặc nhất. Dùng trong ngòi bút máy, tiếp điểm điện và xúc tác.'},
+{n:77,s:'Ir',en:'Iridium',vi:'Iriđi',m:'192.2',ec:'[Xe] 4f¹⁴ 5d⁷ 6s²',cat:'tm',r:6,c:9,
+ den:'Most corrosion-resistant metal. Used in spark plugs, crucibles, and the standard kilogram prototype.',
+ dvi:'Kim loại chống ăn mòn nhất. Dùng trong bugi, nồi nấu chảy và nguyên mẫu kilogram chuẩn.'},
+{n:78,s:'Pt',en:'Platinum',vi:'Platin',m:'195.1',ec:'[Xe] 4f¹⁴ 5d⁹ 6s¹',cat:'tm',r:6,c:10,
+ den:'Precious metal used in catalytic converters, jewelry, chemotherapy drugs, and fuel cells.',
+ dvi:'Kim loại quý dùng trong bộ chuyển đổi xúc tác, trang sức, thuốc hóa trị và pin nhiên liệu.'},
+{n:79,s:'Au',en:'Gold',vi:'Vàng',m:'197.0',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s¹',cat:'tm',r:6,c:11,
+ den:'Symbol of wealth since antiquity. Used in jewelry, electronics, aerospace, and as a monetary standard.',
+ dvi:'Biểu tượng của sự giàu có từ thời cổ đại. Dùng trong trang sức, điện tử, hàng không và tiêu chuẩn tiền tệ.'},
+{n:80,s:'Hg',en:'Mercury',vi:'Thủy ngân',m:'200.6',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s²',cat:'tm',r:6,c:12,
+ den:'Only metal liquid at room temperature. Used in thermometers, barometers, and fluorescent lamps.',
+ dvi:'Kim loại duy nhất ở thể lỏng ở nhiệt độ phòng. Dùng trong nhiệt kế, phong vũ biểu và đèn huỳnh quang.'},
+{n:81,s:'Tl',en:'Thallium',vi:'Tali',m:'204.4',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹',cat:'pt',r:6,c:13,
+ den:'Highly toxic metal formerly used in rat poison. Now used in electronics and medical imaging.',
+ dvi:'Kim loại cực độc từng dùng làm thuốc diệt chuột. Hiện dùng trong điện tử và hình ảnh y tế.'},
+{n:82,s:'Pb',en:'Lead',vi:'Chì',m:'207.2',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²',cat:'pt',r:6,c:14,
+ den:'Dense, soft metal known since antiquity. Used in batteries, radiation shielding, and construction.',
+ dvi:'Kim loại đặc, mềm đã biết từ cổ đại. Dùng trong pin, che chắn bức xạ và xây dựng.'},
+{n:83,s:'Bi',en:'Bismuth',vi:'Bitmut',m:'209.0',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³',cat:'pt',r:6,c:15,
+ den:'Least toxic heavy metal. Used in cosmetics, medicine (Pepto-Bismol), and low-melting alloys.',
+ dvi:'Kim loại nặng ít độc nhất. Dùng trong mỹ phẩm, y học (Pepto-Bismol) và hợp kim nóng chảy thấp.'},
+{n:84,s:'Po',en:'Polonium',vi:'Poloni',m:'(209)',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴',cat:'pt',r:6,c:16,
+ den:'Highly radioactive. Discovered by Marie Curie. Used in anti-static devices and as a heat source.',
+ dvi:'Phóng xạ mạnh. Được Marie Curie phát hiện. Dùng trong thiết bị chống tĩnh điện và nguồn nhiệt.'},
+{n:85,s:'At',en:'Astatine',vi:'Astatin',m:'(210)',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵',cat:'hl',r:6,c:17,
+ den:'Rarest naturally occurring element. Radioactive halogen being studied for cancer radiotherapy.',
+ dvi:'Nguyên tố tự nhiên hiếm nhất. Halogen phóng xạ đang được nghiên cứu cho xạ trị ung thư.'},
+{n:86,s:'Rn',en:'Radon',vi:'Rađon',m:'(222)',ec:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶',cat:'ng',r:6,c:18,
+ den:'Radioactive noble gas. Second leading cause of lung cancer. Naturally occurs from uranium decay.',
+ dvi:'Khí hiếm phóng xạ. Nguyên nhân gây ung thư phổi thứ hai. Xuất hiện tự nhiên từ phân rã uranium.'},
+// Period 7
+{n:87,s:'Fr',en:'Francium',vi:'Franxi',m:'(223)',ec:'[Rn] 7s¹',cat:'am',r:7,c:1,
+ den:'Most unstable naturally occurring element. Extremely rare, used only in basic scientific research.',
+ dvi:'Nguyên tố tự nhiên kém bền nhất. Cực kỳ hiếm, chỉ dùng trong nghiên cứu khoa học cơ bản.'},
+{n:88,s:'Ra',en:'Radium',vi:'Rađi',m:'(226)',ec:'[Rn] 7s²',cat:'ae',r:7,c:2,
+ den:'Discovered by Marie & Pierre Curie. Formerly used in luminous paint. Now used in cancer treatment.',
+ dvi:'Được Marie & Pierre Curie phát hiện. Trước đây dùng trong sơn phát quang. Hiện dùng trong điều trị ung thư.'},
+// Actinides (row 10, cols 3-17)
+{n:89,s:'Ac',en:'Actinium',vi:'Actini',m:'(227)',ec:'[Rn] 6d¹ 7s²',cat:'ac',r:10,c:3,
+ den:'Intensely radioactive. Glows blue in the dark. Being studied for targeted cancer therapy.',
+ dvi:'Phóng xạ mạnh. Phát sáng xanh trong bóng tối. Đang được nghiên cứu cho liệu pháp ung thư nhắm mục tiêu.'},
+{n:90,s:'Th',en:'Thorium',vi:'Thori',m:'232.0',ec:'[Rn] 6d² 7s²',cat:'ac',r:10,c:4,
+ den:'Potential nuclear fuel (thorium reactors). More abundant than uranium. Used in gas mantles.',
+ dvi:'Nhiên liệu hạt nhân tiềm năng (lò phản ứng thori). Phổ biến hơn uranium. Dùng trong vỏ đèn ga.'},
+{n:91,s:'Pa',en:'Protactinium',vi:'Protactini',m:'231.0',ec:'[Rn] 5f² 6d¹ 7s²',cat:'ac',r:10,c:5,
+ den:'Rare and highly radioactive. No significant commercial applications due to scarcity and radioactivity.',
+ dvi:'Hiếm và phóng xạ mạnh. Không có ứng dụng thương mại đáng kể do khan hiếm và phóng xạ.'},
+{n:92,s:'U',en:'Uranium',vi:'Urani',m:'238.0',ec:'[Rn] 5f³ 6d¹ 7s²',cat:'ac',r:10,c:6,
+ den:'Primary fuel for nuclear power plants and nuclear weapons. Also used in military armor-piercing rounds.',
+ dvi:'Nhiên liệu chính cho nhà máy điện hạt nhân và vũ khí hạt nhân. Cũng dùng trong đạn xuyên giáp quân sự.'},
+{n:93,s:'Np',en:'Neptunium',vi:'Neptuni',m:'(237)',ec:'[Rn] 5f⁴ 6d¹ 7s²',cat:'ac',r:10,c:7,
+ den:'First transuranium element discovered. Used in neutron detection equipment.',
+ dvi:'Nguyên tố xuyên urani đầu tiên được phát hiện. Dùng trong thiết bị phát hiện neutron.'},
+{n:94,s:'Pu',en:'Plutonium',vi:'Plutoni',m:'(244)',ec:'[Rn] 5f⁶ 7s²',cat:'ac',r:10,c:8,
+ den:'Used in nuclear weapons and as fuel in space probes (RTGs). Key fissile material.',
+ dvi:'Dùng trong vũ khí hạt nhân và làm nhiên liệu cho tàu thăm dò không gian (RTG). Vật liệu phân hạch chính.'},
+{n:95,s:'Am',en:'Americium',vi:'Americi',m:'(243)',ec:'[Rn] 5f⁷ 7s²',cat:'ac',r:10,c:9,
+ den:'Used in smoke detectors (Am-241). Also used in industrial gauging equipment.',
+ dvi:'Dùng trong đầu báo khói (Am-241). Cũng dùng trong thiết bị đo lường công nghiệp.'},
+{n:96,s:'Cm',en:'Curium',vi:'Curi',m:'(247)',ec:'[Rn] 5f⁷ 6d¹ 7s²',cat:'ac',r:10,c:10,
+ den:'Named after Marie & Pierre Curie. Used as fuel in radioisotope thermoelectric generators.',
+ dvi:'Đặt theo tên Marie & Pierre Curie. Dùng làm nhiên liệu trong máy phát nhiệt điện đồng vị phóng xạ.'},
+{n:97,s:'Bk',en:'Berkelium',vi:'Beckeli',m:'(247)',ec:'[Rn] 5f⁹ 7s²',cat:'ac',r:10,c:11,
+ den:'Named after Berkeley, California. Produced in minute quantities for scientific research only.',
+ dvi:'Đặt theo tên Berkeley, California. Được sản xuất với lượng rất nhỏ chỉ cho nghiên cứu khoa học.'},
+{n:98,s:'Cf',en:'Californium',vi:'Califoni',m:'(251)',ec:'[Rn] 5f¹⁰ 7s²',cat:'ac',r:10,c:12,
+ den:'Strong neutron emitter. Used in nuclear reactor start-up, metal detection, and cancer treatment.',
+ dvi:'Phát neutron mạnh. Dùng trong khởi động lò phản ứng hạt nhân, dò kim loại và điều trị ung thư.'},
+{n:99,s:'Es',en:'Einsteinium',vi:'Ensteni',m:'(252)',ec:'[Rn] 5f¹¹ 7s²',cat:'ac',r:10,c:13,
+ den:'Named after Albert Einstein. Discovered in debris of first hydrogen bomb test. No practical uses.',
+ dvi:'Đặt theo tên Albert Einstein. Phát hiện trong mảnh vụn vụ thử bom H đầu tiên. Không có ứng dụng thực tế.'},
+{n:100,s:'Fm',en:'Fermium',vi:'Fecmi',m:'(257)',ec:'[Rn] 5f¹² 7s²',cat:'ac',r:10,c:14,
+ den:'Named after Enrico Fermi. Produced in nuclear explosions and reactors. Used only in research.',
+ dvi:'Đặt theo tên Enrico Fermi. Được tạo ra trong vụ nổ hạt nhân và lò phản ứng. Chỉ dùng trong nghiên cứu.'},
+{n:101,s:'Md',en:'Mendelevium',vi:'Menđelevi',m:'(258)',ec:'[Rn] 5f¹³ 7s²',cat:'ac',r:10,c:15,
+ den:'Named after Dmitri Mendeleev. Only produced in tiny amounts. No applications outside research.',
+ dvi:'Đặt theo tên Dmitri Mendeleev. Chỉ được sản xuất với lượng rất nhỏ. Không có ứng dụng ngoài nghiên cứu.'},
+{n:102,s:'No',en:'Nobelium',vi:'Nobeli',m:'(259)',ec:'[Rn] 5f¹⁴ 7s²',cat:'ac',r:10,c:16,
+ den:'Named after Alfred Nobel. Extremely radioactive with short half-life. Research use only.',
+ dvi:'Đặt theo tên Alfred Nobel. Phóng xạ cực mạnh với chu kỳ bán rã ngắn. Chỉ dùng trong nghiên cứu.'},
+{n:103,s:'Lr',en:'Lawrencium',vi:'Lorenxi',m:'(266)',ec:'[Rn] 5f¹⁴ 7s² 7p¹',cat:'ac',r:10,c:17,
+ den:'Named after Ernest Lawrence (cyclotron inventor). Last actinide. No practical applications.',
+ dvi:'Đặt theo tên Ernest Lawrence (phát minh cyclotron). Actinit cuối cùng. Không có ứng dụng thực tế.'},
+// Period 6 & 7 continued (d-block and p-block)
+{n:104,s:'Rf',en:'Rutherfordium',vi:'Rơđơfoađi',m:'(267)',ec:'[Rn] 5f¹⁴ 6d² 7s²',cat:'tm',r:7,c:4,
+ den:'Named after Ernest Rutherford. Synthetic, highly radioactive. No practical applications.',
+ dvi:'Đặt theo tên Ernest Rutherford. Tổng hợp, phóng xạ mạnh. Không có ứng dụng thực tế.'},
+{n:105,s:'Db',en:'Dubnium',vi:'Đubni',m:'(268)',ec:'[Rn] 5f¹⁴ 6d³ 7s²',cat:'tm',r:7,c:5,
+ den:'Named after Dubna, Russia. Synthetic element produced in particle accelerators. Research only.',
+ dvi:'Đặt theo tên Dubna, Nga. Nguyên tố tổng hợp trong máy gia tốc hạt. Chỉ dùng trong nghiên cứu.'},
+{n:106,s:'Sg',en:'Seaborgium',vi:'Siabo',m:'(269)',ec:'[Rn] 5f¹⁴ 6d⁴ 7s²',cat:'tm',r:7,c:6,
+ den:'Named after Glenn T. Seaborg. Synthetic superheavy element with no commercial applications.',
+ dvi:'Đặt theo tên Glenn T. Seaborg. Nguyên tố siêu nặng tổng hợp, không có ứng dụng thương mại.'},
+{n:107,s:'Bh',en:'Bohrium',vi:'Bohri',m:'(270)',ec:'[Rn] 5f¹⁴ 6d⁵ 7s²',cat:'tm',r:7,c:7,
+ den:'Named after Niels Bohr. Highly unstable synthetic element. Only a few atoms ever produced.',
+ dvi:'Đặt theo tên Niels Bohr. Nguyên tố tổng hợp rất không bền. Chỉ vài nguyên tử được tạo ra.'},
+{n:108,s:'Hs',en:'Hassium',vi:'Hatxi',m:'(277)',ec:'[Rn] 5f¹⁴ 6d⁶ 7s²',cat:'tm',r:7,c:8,
+ den:'Named after Hesse, Germany. Synthetic superheavy element with extremely short half-life.',
+ dvi:'Đặt theo tên Hesse, Đức. Nguyên tố siêu nặng tổng hợp với chu kỳ bán rã cực ngắn.'},
+{n:109,s:'Mt',en:'Meitnerium',vi:'Meitneri',m:'(278)',ec:'[Rn] 5f¹⁴ 6d⁷ 7s²',cat:'tm',r:7,c:9,
+ den:'Named after Lise Meitner (nuclear fission pioneer). Synthetic, with no known applications.',
+ dvi:'Đặt theo tên Lise Meitner (tiên phong phân hạch hạt nhân). Tổng hợp, không có ứng dụng.'},
+{n:110,s:'Ds',en:'Darmstadtium',vi:'Đamstati',m:'(281)',ec:'[Rn] 5f¹⁴ 6d⁹ 7s¹',cat:'tm',r:7,c:10,
+ den:'Named after Darmstadt, Germany. Extremely unstable synthetic element. Research purposes only.',
+ dvi:'Đặt theo tên Darmstadt, Đức. Nguyên tố tổng hợp cực kỳ không bền. Chỉ dùng trong nghiên cứu.'},
+{n:111,s:'Rg',en:'Roentgenium',vi:'Rơngeni',m:'(282)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s¹',cat:'tm',r:7,c:11,
+ den:'Named after Wilhelm Röntgen (X-ray discoverer). Synthetic superheavy element.',
+ dvi:'Đặt theo tên Wilhelm Röntgen (phát hiện tia X). Nguyên tố siêu nặng tổng hợp.'},
+{n:112,s:'Cn',en:'Copernicium',vi:'Copecnixi',m:'(285)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s²',cat:'tm',r:7,c:12,
+ den:'Named after Nicolaus Copernicus. Extremely radioactive. Predicted to behave like a noble gas.',
+ dvi:'Đặt theo tên Nicolaus Copernicus. Phóng xạ cực mạnh. Được dự đoán có tính chất giống khí hiếm.'},
+{n:113,s:'Nh',en:'Nihonium',vi:'Nihoni',m:'(286)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹',cat:'pt',r:7,c:13,
+ den:'Named after Japan (Nihon). First element discovered in Asia. Extremely short-lived.',
+ dvi:'Đặt theo tên Nhật Bản (Nihon). Nguyên tố đầu tiên được phát hiện ở châu Á. Tồn tại rất ngắn.'},
+{n:114,s:'Fl',en:'Flerovium',vi:'Flerovi',m:'(289)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²',cat:'pt',r:7,c:14,
+ den:'Named after Flerov Laboratory. May have unusually stable nuclear configuration ("island of stability").',
+ dvi:'Đặt theo tên Phòng thí nghiệm Flerov. Có thể có cấu hình hạt nhân ổn định bất thường.'},
+{n:115,s:'Mc',en:'Moscovium',vi:'Moscovi',m:'(290)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³',cat:'pt',r:7,c:15,
+ den:'Named after Moscow Oblast. Synthetic superheavy element with very short half-life.',
+ dvi:'Đặt theo tên tỉnh Moscow. Nguyên tố siêu nặng tổng hợp với chu kỳ bán rã rất ngắn.'},
+{n:116,s:'Lv',en:'Livermorium',vi:'Livemori',m:'(293)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴',cat:'pt',r:7,c:16,
+ den:'Named after Lawrence Livermore National Laboratory. Highly radioactive synthetic element.',
+ dvi:'Đặt theo tên Phòng thí nghiệm Quốc gia Lawrence Livermore. Nguyên tố tổng hợp phóng xạ mạnh.'},
+{n:117,s:'Ts',en:'Tennessine',vi:'Tennesin',m:'(294)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵',cat:'hl',r:7,c:17,
+ den:'Named after Tennessee, USA. Second-heaviest known halogen. Extremely radioactive.',
+ dvi:'Đặt theo tên Tennessee, Hoa Kỳ. Halogen nặng thứ hai được biết. Phóng xạ cực mạnh.'},
+{n:118,s:'Og',en:'Oganesson',vi:'Oganeson',m:'(294)',ec:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶',cat:'ng',r:7,c:18,
+ den:'Heaviest known element. Named after Yuri Oganessian. May not behave as a typical noble gas.',
+ dvi:'Nguyên tố nặng nhất được biết. Đặt theo tên Yuri Oganessian. Có thể không giống khí hiếm điển hình.'}
+];
+
+// ============================================================
+// TRANSLATIONS
+// ============================================================
+const i18n = {
+    vi: {
+        main_title: 'Bảng Tuần Hoàn Hóa Học',
+        sub_title: '118 Nguyên tố • Tương tác 3D Electron',
+        search_placeholder: 'Tìm nguyên tố (tên, ký hiệu, số hiệu)...',
+        all: 'Tất cả', am: 'Kim loại kiềm', ae: 'Kiềm thổ', tm: 'Chuyển tiếp',
+        pt: 'Sau chuyển tiếp', ml: 'Á kim', nm: 'Phi kim', hl: 'Halogen',
+        ng: 'Khí hiếm', ln: 'Lantanit', ac: 'Actinit',
+        mass_label: 'Khối lượng nguyên tử', cat_label: 'Nhóm nguyên tố',
+        config_label: 'Cấu hình electron', desc_label: 'Ứng dụng & Thông tin',
+        sim_3d_title: 'Mô phỏng Electron 3D',
+        shells_label: 'Lớp electron (K, L, M, N...):',
+        shells_summary_label: 'Phân bố theo lớp',
+        prev_el: 'Trước', next_el: 'Sau',
+        credits_title: 'Thành Viên Nhóm', credits_sub: 'Đội ngũ phát triển',
+        role_member: 'Thành viên',
+        credits_footer: '© 2026 • Dự án Bảng Tuần Hoàn Tương Tác',
+        footer_text: 'Bảng Tuần Hoàn Hóa Học Tương Tác • 118 Nguyên Tố',
+        ln_label: '57-71', ac_label: '89-103',
+        cat_names: {nm:'Phi kim',ng:'Khí hiếm',am:'Kim loại kiềm',ae:'Kim loại kiềm thổ',tm:'Kim loại chuyển tiếp',pt:'Kim loại sau chuyển tiếp',ml:'Á kim',hl:'Halogen',ln:'Lantanit',ac:'Actinit'}
+    },
+    en: {
+        main_title: 'Periodic Table of Elements',
+        sub_title: '118 Elements • 3D Electron Simulation',
+        search_placeholder: 'Search elements (name, symbol, number)...',
+        all: 'All', am: 'Alkali Metals', ae: 'Alkaline Earth', tm: 'Transition Metals',
+        pt: 'Post-transition', ml: 'Metalloids', nm: 'Nonmetals', hl: 'Halogens',
+        ng: 'Noble Gases', ln: 'Lanthanides', ac: 'Actinides',
+        mass_label: 'Atomic Mass', cat_label: 'Element Category',
+        config_label: 'Electron Configuration', desc_label: 'Applications & Info',
+        sim_3d_title: '3D Electron Simulation',
+        shells_label: 'Electron Shells (K, L, M, N...):',
+        shells_summary_label: 'Shell Distribution',
+        prev_el: 'Prev', next_el: 'Next',
+        credits_title: 'Team Members', credits_sub: 'Development Team',
+        role_member: 'Member',
+        credits_footer: '© 2026 • Interactive Periodic Table Project',
+        footer_text: 'Interactive Periodic Table of Elements • 118 Elements',
+        ln_label: '57-71', ac_label: '89-103',
+        cat_names: {nm:'Nonmetal',ng:'Noble Gas',am:'Alkali Metal',ae:'Alkaline Earth Metal',tm:'Transition Metal',pt:'Post-transition Metal',ml:'Metalloid',hl:'Halogen',ln:'Lanthanide',ac:'Actinide'}
+    }
+};
+
+// ============================================================
+// ELECTRON SHELLS PER ELEMENT (1 - 118)
+// [K, L, M, N, O, P, Q]
+// ============================================================
+const elementShells = {
+    1:[1], 2:[2],
+    3:[2,1], 4:[2,2], 5:[2,3], 6:[2,4], 7:[2,5], 8:[2,6], 9:[2,7], 10:[2,8],
+    11:[2,8,1], 12:[2,8,2], 13:[2,8,3], 14:[2,8,4], 15:[2,8,5], 16:[2,8,6], 17:[2,8,7], 18:[2,8,8],
+    19:[2,8,8,1], 20:[2,8,8,2], 21:[2,8,9,2], 22:[2,8,10,2], 23:[2,8,11,2], 24:[2,8,13,1],
+    25:[2,8,13,2], 26:[2,8,14,2], 27:[2,8,15,2], 28:[2,8,16,2], 29:[2,8,18,1], 30:[2,8,18,2],
+    31:[2,8,18,3], 32:[2,8,18,4], 33:[2,8,18,5], 34:[2,8,18,6], 35:[2,8,18,7], 36:[2,8,18,8],
+    37:[2,8,18,8,1], 38:[2,8,18,8,2], 39:[2,8,18,9,2], 40:[2,8,18,10,2], 41:[2,8,18,12,1],
+    42:[2,8,18,13,1], 43:[2,8,18,13,2], 44:[2,8,18,15,1], 45:[2,8,18,16,1], 46:[2,8,18,18],
+    47:[2,8,18,18,1], 48:[2,8,18,18,2], 49:[2,8,18,18,3], 50:[2,8,18,18,4], 51:[2,8,18,18,5],
+    52:[2,8,18,18,6], 53:[2,8,18,18,7], 54:[2,8,18,18,8],
+    55:[2,8,18,18,8,1], 56:[2,8,18,18,8,2], 57:[2,8,18,18,9,2], 58:[2,8,18,19,9,2],
+    59:[2,8,18,21,8,2], 60:[2,8,18,22,8,2], 61:[2,8,18,23,8,2], 62:[2,8,18,24,8,2],
+    63:[2,8,18,25,8,2], 64:[2,8,18,25,9,2], 65:[2,8,18,27,8,2], 66:[2,8,18,28,8,2],
+    67:[2,8,18,29,8,2], 68:[2,8,18,30,8,2], 69:[2,8,18,31,8,2], 70:[2,8,18,32,8,2],
+    71:[2,8,18,32,9,2], 72:[2,8,18,32,10,2], 73:[2,8,18,32,11,2], 74:[2,8,18,32,12,2],
+    75:[2,8,18,32,13,2], 76:[2,8,18,32,14,2], 77:[2,8,18,32,15,2], 78:[2,8,18,32,17,1],
+    79:[2,8,18,32,18,1], 80:[2,8,18,32,18,2], 81:[2,8,18,32,18,3], 82:[2,8,18,32,18,4],
+    83:[2,8,18,32,18,5], 84:[2,8,18,32,18,6], 85:[2,8,18,32,18,7], 86:[2,8,18,32,18,8],
+    87:[2,8,18,32,18,8,1], 88:[2,8,18,32,18,8,2], 89:[2,8,18,32,18,9,2], 90:[2,8,18,32,18,10,2],
+    91:[2,8,18,32,20,9,2], 92:[2,8,18,32,21,9,2], 93:[2,8,18,32,22,9,2], 94:[2,8,18,32,24,8,2],
+    95:[2,8,18,32,25,8,2], 96:[2,8,18,32,25,9,2], 97:[2,8,18,32,27,8,2], 98:[2,8,18,32,28,8,2],
+    99:[2,8,18,32,29,8,2], 100:[2,8,18,32,30,8,2], 101:[2,8,18,32,31,8,2], 102:[2,8,18,32,32,8,2],
+    103:[2,8,18,32,32,8,3], 104:[2,8,18,32,32,10,2], 105:[2,8,18,32,32,11,2], 106:[2,8,18,32,32,12,2],
+    107:[2,8,18,32,32,13,2], 108:[2,8,18,32,32,14,2], 109:[2,8,18,32,32,15,2], 110:[2,8,18,32,32,16,2],
+    111:[2,8,18,32,32,17,2], 112:[2,8,18,32,32,18,2], 113:[2,8,18,32,32,18,3], 114:[2,8,18,32,32,18,4],
+    115:[2,8,18,32,32,18,5], 116:[2,8,18,32,32,18,6], 117:[2,8,18,32,32,18,7], 118:[2,8,18,32,32,18,8]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let currentLang = 'vi';
+let currentFilter = 'all';
+let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+let currentModalElement = null;
+
+// ============================================================
+// CATEGORY COLOR MAP (for modal header gradients)
+// ============================================================
+const catGradients = {
+    nm: 'linear-gradient(135deg, #0284c7, #0369a1)',
+    ng: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+    am: 'linear-gradient(135deg, #e11d48, #be123c)',
+    ae: 'linear-gradient(135deg, #ea580c, #c2410c)',
+    tm: 'linear-gradient(135deg, #d97706, #b45309)',
+    pt: 'linear-gradient(135deg, #16a34a, #15803d)',
+    ml: 'linear-gradient(135deg, #0d9488, #0f766e)',
+    hl: 'linear-gradient(135deg, #4f46e5, #4338ca)',
+    ln: 'linear-gradient(135deg, #db2777, #be185d)',
+    ac: 'linear-gradient(135deg, #c026d3, #a21caf)'
+};
+
+// ============================================================
+// 3D SIMULATION ENGINE (Three.js)
+// ============================================================
+let atomRenderer = null;
+let atomScene = null;
+let atomCamera = null;
+let atomAnimId = null;
+let atomGroup = null;
+let electronMeshes = [];
+let shellRings = [];
+let simSpeed = 1.0;
+const simSpeeds = [0.5, 1.0, 1.5, 2.0];
+let simSpeedIdx = 1;
+let isSimPaused = false;
+let isDragging = false;
+let prevMousePos = { x: 0, y: 0 };
+let atomMomentum = { x: 0.002, y: 0.004 };
+
+const shellPalette = [
+    { ring: 0x38bdf8, electron: 0x7dd3fc, glow: '#38bdf8' }, // K - Cyan
+    { ring: 0x34d399, electron: 0x6ee7b7, glow: '#34d399' }, // L - Emerald
+    { ring: 0xfbbf24, electron: 0xfef08a, glow: '#fbbf24' }, // M - Amber
+    { ring: 0xf97316, electron: 0xfdba74, glow: '#f97316' }, // N - Orange
+    { ring: 0xf43f5e, electron: 0xfca5a5, glow: '#f43f5e' }, // O - Rose
+    { ring: 0xc084fc, electron: 0xe9d5ff, glow: '#c084fc' }, // P - Purple
+    { ring: 0x818cf8, electron: 0xc7d2fe, glow: '#818cf8' }  // Q - Indigo
+];
+
+function initAtomScene() {
+    const container = document.getElementById('atom-3d-container');
+    if (!container) return;
+
+    if (atomAnimId) {
+        cancelAnimationFrame(atomAnimId);
+        atomAnimId = null;
+    }
+    container.innerHTML = '';
+
+    const width = container.clientWidth || 360;
+    const height = container.clientHeight || 280;
+
+    atomScene = new THREE.Scene();
+    atomCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    atomCamera.position.set(0, 0, 32);
+
+    atomRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    atomRenderer.setSize(width, height);
+    atomRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(atomRenderer.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    atomScene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0xffffff, 1.8, 100);
+    pointLight.position.set(12, 16, 25);
+    atomScene.add(pointLight);
+
+    const coreLight = new THREE.PointLight(0x6366f1, 2.5, 35);
+    coreLight.position.set(0, 0, 0);
+    atomScene.add(coreLight);
+
+    // Mouse Drag Rotation
+    const canvas = atomRenderer.domElement;
+    canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevMousePos = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging || !atomGroup) return;
+        const deltaX = e.clientX - prevMousePos.x;
+        const deltaY = e.clientY - prevMousePos.y;
+        atomGroup.rotation.y += deltaX * 0.008;
+        atomGroup.rotation.x += deltaY * 0.008;
+        atomMomentum = { x: deltaY * 0.0015, y: deltaX * 0.0015 };
+        prevMousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    // Touch Drag Rotation
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            prevMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+    }, { passive: true });
+    window.addEventListener('touchend', () => { isDragging = false; });
+    window.addEventListener('touchmove', (e) => {
+        if (!isDragging || !atomGroup || e.touches.length !== 1) return;
+        const deltaX = e.touches[0].clientX - prevMousePos.x;
+        const deltaY = e.touches[0].clientY - prevMousePos.y;
+        atomGroup.rotation.y += deltaX * 0.008;
+        atomGroup.rotation.x += deltaY * 0.008;
+        prevMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }, { passive: true });
+
+    // Scroll Zoom
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        atomCamera.position.z += e.deltaY * 0.025;
+        atomCamera.position.z = Math.max(12, Math.min(65, atomCamera.position.z));
+    }, { passive: false });
+}
+
+function buildAtom3D(el) {
+    initAtomScene();
+    if (!atomScene) return;
+
+    if (atomGroup) {
+        atomScene.remove(atomGroup);
+    }
+
+    atomGroup = new THREE.Group();
+    electronMeshes = [];
+    shellRings = [];
+
+    const shells = elementShells[el.n] || [el.n];
+
+    // Nucleus: glowing energy sphere + protons & neutrons
+    const nucleusGroup = new THREE.Group();
+    const coreGeo = new THREE.SphereGeometry(1.6, 24, 24);
+    const coreMat = new THREE.MeshStandardMaterial({
+        color: 0x4f46e5,
+        emissive: 0x6366f1,
+        emissiveIntensity: 0.9,
+        roughness: 0.2,
+        metalness: 0.5
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    nucleusGroup.add(coreMesh);
+
+    // Surrounding nucleons
+    const nucleonCount = Math.min(el.n, 36);
+    const nGeo = new THREE.SphereGeometry(0.38, 12, 12);
+    const pMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5 });
+    const neuMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x1d4ed8, emissiveIntensity: 0.5 });
+
+    const phi = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < nucleonCount; i++) {
+        const y = 1 - (i / (nucleonCount - 1 || 1)) * 2;
+        const rAtY = Math.sqrt(1 - y * y);
+        const theta = phi * i;
+        const x = Math.cos(theta) * rAtY;
+        const z = Math.sin(theta) * rAtY;
+        const dist = 1.35 + (i % 3) * 0.12;
+        const mesh = new THREE.Mesh(nGeo, i % 2 === 0 ? pMat : neuMat);
+        mesh.position.set(x * dist, y * dist, z * dist);
+        nucleusGroup.add(mesh);
+    }
+    atomGroup.add(nucleusGroup);
+
+    // Camera distance based on shells
+    const maxRadius = 3.6 + (shells.length - 1) * 2.2;
+    atomCamera.position.z = Math.max(22, maxRadius * 2.3);
+
+    // Electron geometry
+    const eGeo = new THREE.SphereGeometry(0.36, 16, 16);
+    const auraGeo = new THREE.SphereGeometry(0.55, 12, 12);
+
+    // Create shells and electrons
+    shells.forEach((electronCount, sIdx) => {
+        const radius = 3.8 + sIdx * 2.2;
+        const colorSet = shellPalette[sIdx % shellPalette.length];
+
+        // 3D gyroscopic tilt for each shell
+        const tiltX = (sIdx * 0.42) + 0.15;
+        const tiltY = (sIdx * 0.55);
+        const tiltZ = (sIdx * 0.32);
+
+        // Ring
+        const ringGeo = new THREE.TorusGeometry(radius, 0.038, 8, 120);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: colorSet.ring,
+            transparent: true,
+            opacity: 0.45
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.set(tiltX, tiltY, tiltZ);
+        atomGroup.add(ringMesh);
+        shellRings.push(ringMesh);
+
+        // Orbiting electrons
+        const eMat = new THREE.MeshStandardMaterial({
+            color: colorSet.electron,
+            emissive: colorSet.ring,
+            emissiveIntensity: 0.85,
+            roughness: 0.2
+        });
+        const auraMat = new THREE.MeshBasicMaterial({
+            color: colorSet.ring,
+            transparent: true,
+            opacity: 0.3
+        });
+
+        const speed = 1.6 / Math.pow(sIdx + 1, 0.65);
+
+        for (let j = 0; j < electronCount; j++) {
+            const initialAngle = (2 * Math.PI * j) / electronCount;
+            const eMesh = new THREE.Mesh(eGeo, eMat);
+            eMesh.add(new THREE.Mesh(auraGeo, auraMat));
+            atomGroup.add(eMesh);
+
+            electronMeshes.push({
+                mesh: eMesh,
+                radius: radius,
+                angle: initialAngle,
+                speed: speed,
+                tiltX: tiltX,
+                tiltY: tiltY,
+                tiltZ: tiltZ
+            });
+        }
+    });
+
+    atomScene.add(atomGroup);
+
+    // Animation Loop
+    let lastTime = performance.now();
+    function animate(currentTime) {
+        atomAnimId = requestAnimationFrame(animate);
+        const dt = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        if (!isSimPaused) {
+            electronMeshes.forEach(e => {
+                e.angle += e.speed * simSpeed * dt * 2.2;
+                const ux = Math.cos(e.angle) * e.radius;
+                const uy = Math.sin(e.angle) * e.radius;
+                const pos = new THREE.Vector3(ux, uy, 0);
+                pos.applyEuler(new THREE.Euler(e.tiltX, e.tiltY, e.tiltZ));
+                e.mesh.position.copy(pos);
+            });
+
+            // Gentle core pulsation
+            const pulse = 1 + Math.sin(currentTime * 0.0035) * 0.05;
+            coreMesh.scale.set(pulse, pulse, pulse);
+
+            // Subtle rotation drift
+            if (!isDragging && atomGroup) {
+                atomGroup.rotation.y += atomMomentum.y;
+                atomGroup.rotation.x += atomMomentum.x;
+                atomMomentum.x *= 0.985;
+                atomMomentum.y = atomMomentum.y * 0.985 + 0.002 * 0.015;
+            }
+        }
+
+        if (atomRenderer && atomScene && atomCamera) {
+            atomRenderer.render(atomScene, atomCamera);
+        }
+    }
+
+    atomAnimId = requestAnimationFrame(animate);
+}
+
+function highlightShell(shellIdx) {
+    if (!shellRings) return;
+    shellRings.forEach((ring, idx) => {
+        if (idx === shellIdx) {
+            ring.material.opacity = 1.0;
+            ring.scale.set(1.06, 1.06, 1.06);
+        } else {
+            ring.material.opacity = 0.18;
+            ring.scale.set(1, 1, 1);
+        }
+    });
+}
+
+function unhighlightShells() {
+    if (!shellRings) return;
+    shellRings.forEach(ring => {
+        ring.material.opacity = 0.45;
+        ring.scale.set(1, 1, 1);
+    });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('pt-theme');
+    if (savedTheme === 'dark') isDark = true;
+    else if (savedTheme === 'light') isDark = false;
+    applyTheme();
+
+    // Apply saved language
+    const savedLang = localStorage.getItem('pt-lang');
+    if (savedLang) currentLang = savedLang;
+    if (currentLang === 'en') {
+        document.getElementById('lang-toggle').classList.add('active');
+        document.getElementById('lang-icon').textContent = 'EN';
+    }
+
+    renderTable();
+    applyLanguage();
+    bindEvents();
+});
+
+// ============================================================
+// RENDER PERIODIC TABLE
+// ============================================================
+function renderTable() {
+    const grid = document.getElementById('periodic-table');
+    grid.innerHTML = '';
+
+    // Render all elements
+    elements.forEach(el => {
+        const cell = document.createElement('div');
+        cell.className = `el-cell cat-${el.cat}`;
+        cell.style.gridRow = el.r;
+        cell.style.gridColumn = el.c;
+        cell.dataset.number = el.n;
+        cell.dataset.cat = el.cat;
+        cell.innerHTML = `
+            <span class="el-number">${el.n}</span>
+            <span class="el-symbol">${el.s}</span>
+            <span class="el-name" data-el-name>${currentLang === 'vi' ? el.vi : el.en}</span>
+            <span class="el-mass">${el.m}</span>
+        `;
+        cell.addEventListener('click', () => openModal(el));
+        grid.appendChild(cell);
+    });
+
+    // Add Lanthanide marker at row 6, col 3
+    const lnMarker = document.createElement('div');
+    lnMarker.className = 'series-marker series-ln';
+    lnMarker.style.gridRow = '6';
+    lnMarker.style.gridColumn = '3';
+    lnMarker.innerHTML = '<span>57-71</span>';
+    grid.appendChild(lnMarker);
+
+    // Add Actinide marker at row 7, col 3
+    const acMarker = document.createElement('div');
+    acMarker.className = 'series-marker series-ac';
+    acMarker.style.gridRow = '7';
+    acMarker.style.gridColumn = '3';
+    acMarker.innerHTML = '<span>89-103</span>';
+    grid.appendChild(acMarker);
+
+    // Gap row labels
+    const sepLn = document.createElement('div');
+    sepLn.style.gridRow = '9';
+    sepLn.style.gridColumn = '1 / 3';
+    sepLn.className = 'flex items-center justify-end pr-2 text-[10px] font-bold text-pink-500 dark:text-pink-400 opacity-90';
+    sepLn.innerHTML = '<i class="fa-solid fa-arrow-right mr-1 text-[8px]"></i> Lantanit';
+    sepLn.dataset.i18nInner = 'ln';
+    grid.appendChild(sepLn);
+
+    const sepAc = document.createElement('div');
+    sepAc.style.gridRow = '10';
+    sepAc.style.gridColumn = '1 / 3';
+    sepAc.className = 'flex items-center justify-end pr-2 text-[10px] font-bold text-fuchsia-500 dark:text-fuchsia-400 opacity-90';
+    sepAc.innerHTML = '<i class="fa-solid fa-arrow-right mr-1 text-[8px]"></i> Actinit';
+    sepAc.dataset.i18nInner = 'ac';
+    grid.appendChild(sepAc);
+}
+
+// ============================================================
+// MODAL & NAVIGATION
+// ============================================================
+function openModal(el) {
+    currentModalElement = el;
+    const modal = document.getElementById('element-modal');
+    const t = i18n[currentLang];
+
+    document.getElementById('modal-symbol').textContent = el.s;
+    document.getElementById('modal-number').textContent = `#${el.n}`;
+    document.getElementById('modal-name').textContent = currentLang === 'vi' ? el.vi : el.en;
+    document.getElementById('modal-name-alt').textContent = currentLang === 'vi' ? el.en : el.vi;
+    document.getElementById('modal-mass').textContent = el.m + ' u';
+    document.getElementById('modal-category').textContent = t.cat_names[el.cat];
+    document.getElementById('modal-category-badge').textContent = t.cat_names[el.cat];
+    document.getElementById('modal-config').textContent = el.ec;
+    document.getElementById('modal-desc').textContent = currentLang === 'vi' ? el.dvi : el.den;
+
+    // Set header gradient
+    document.getElementById('modal-header').style.background = catGradients[el.cat] || '#4f46e5';
+
+    // Shell Badges & Summary
+    const shells = elementShells[el.n] || [el.n];
+    const shellLetters = ['K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+    const badgesContainer = document.getElementById('atom-shell-badges');
+    badgesContainer.innerHTML = '';
+
+    shells.forEach((count, idx) => {
+        const badge = document.createElement('span');
+        const color = shellPalette[idx % shellPalette.length];
+        badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold border transition-all cursor-pointer hover:scale-105 select-none';
+        badge.style.background = 'rgba(255,255,255,0.06)';
+        badge.style.borderColor = color.glow;
+        badge.style.color = color.glow;
+        badge.innerHTML = `<span class="opacity-70">${shellLetters[idx]}:</span> ${count}e⁻`;
+        badge.title = `Lớp ${shellLetters[idx]}: ${count} electron (Rê chuột để làm nổi bật quỹ đạo)`;
+
+        badge.addEventListener('mouseenter', () => highlightShell(idx));
+        badge.addEventListener('mouseleave', () => unhighlightShells());
+        badgesContainer.appendChild(badge);
+    });
+
+    document.getElementById('atom-total-electrons').textContent = `${el.n} e⁻ (${shells.length} lớp)`;
+    document.getElementById('modal-shells-summary').textContent = shells.map((c, i) => `${shellLetters[i]}: ${c}`).join(' • ');
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Initialize 3D simulation after modal display transition
+    setTimeout(() => {
+        buildAtom3D(el);
+    }, 40);
+}
+
+function navigateModal(direction) {
+    if (!currentModalElement) return;
+    let nextIndex = currentModalElement.n + direction;
+    if (nextIndex < 1) nextIndex = 118;
+    if (nextIndex > 118) nextIndex = 1;
+    const target = elements.find(e => e.n === nextIndex);
+    if (target) openModal(target);
+}
+
+function closeModal() {
+    document.getElementById('element-modal').classList.remove('active');
+    document.body.style.overflow = '';
+    if (atomAnimId) {
+        cancelAnimationFrame(atomAnimId);
+        atomAnimId = null;
+    }
+}
+
+function closeCredits() {
+    document.getElementById('credits-modal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+function bindEvents() {
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+        isDark = !isDark;
+        applyTheme();
+        localStorage.setItem('pt-theme', isDark ? 'dark' : 'light');
+    });
+
+    // Language toggle
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+        const toggle = document.getElementById('lang-toggle');
+        toggle.classList.toggle('active');
+        currentLang = toggle.classList.contains('active') ? 'en' : 'vi';
+        document.getElementById('lang-icon').textContent = currentLang.toUpperCase();
+        applyLanguage();
+        updateElementNames();
+        if (currentModalElement) openModal(currentModalElement);
+        localStorage.setItem('pt-lang', currentLang);
+    });
+
+    // Credits
+    document.getElementById('credits-btn').addEventListener('click', () => {
+        document.getElementById('credits-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Close modals on overlay click
+    document.getElementById('element-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+    document.getElementById('credits-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeCredits();
+    });
+
+    // Close modals or navigate on Keyboard
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeCredits();
+        } else if (document.getElementById('element-modal').classList.contains('active')) {
+            if (e.key === 'ArrowLeft') navigateModal(-1);
+            else if (e.key === 'ArrowRight') navigateModal(1);
+        }
+    });
+
+    // 3D Simulation Controls
+    document.getElementById('btn-sim-pause').addEventListener('click', () => {
+        isSimPaused = !isSimPaused;
+        const icon = document.getElementById('sim-pause-icon');
+        icon.className = isSimPaused ? 'fa-solid fa-play text-[11px]' : 'fa-solid fa-pause text-[11px]';
+    });
+
+    document.getElementById('btn-sim-speed').addEventListener('click', () => {
+        simSpeedIdx = (simSpeedIdx + 1) % simSpeeds.length;
+        simSpeed = simSpeeds[simSpeedIdx];
+        document.getElementById('sim-speed-text').textContent = `${simSpeed.toFixed(1)}x`;
+    });
+
+    document.getElementById('btn-sim-reset').addEventListener('click', () => {
+        if (atomGroup) {
+            atomGroup.rotation.set(0, 0, 0);
+            atomMomentum = { x: 0.002, y: 0.004 };
+        }
+        if (atomCamera && currentModalElement) {
+            const shells = elementShells[currentModalElement.n] || [1];
+            const maxRadius = 3.6 + (shells.length - 1) * 2.2;
+            atomCamera.position.set(0, 0, Math.max(22, maxRadius * 2.3));
+        }
+    });
+
+    // Modal navigation buttons
+    document.getElementById('btn-prev-el').addEventListener('click', () => navigateModal(-1));
+    document.getElementById('btn-next-el').addEventListener('click', () => navigateModal(1));
+
+    // Window resize
+    window.addEventListener('resize', () => {
+        const container = document.getElementById('atom-3d-container');
+        if (container && atomRenderer && atomCamera) {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            if (width > 0 && height > 0) {
+                atomCamera.aspect = width / height;
+                atomCamera.updateProjectionMatrix();
+                atomRenderer.setSize(width, height);
+            }
+        }
+    });
+
+    // Search
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', debounce(handleSearch, 200));
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.cat;
+            searchInput.value = '';
+            applyFilter();
+        });
+    });
+}
+
+// ============================================================
+// SEARCH & FILTER
+// ============================================================
+function handleSearch() {
+    const query = document.getElementById('search-input').value.trim().toLowerCase();
+    const cells = document.querySelectorAll('.el-cell');
+
+    if (!query) {
+        applyFilter();
+        return;
+    }
+
+    // Reset filter buttons
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn[data-cat="all"]').classList.add('active');
+    currentFilter = 'all';
+
+    cells.forEach(cell => {
+        const num = parseInt(cell.dataset.number);
+        const el = elements.find(e => e.n === num);
+        if (!el) return;
+
+        const matches =
+            el.s.toLowerCase().includes(query) ||
+            el.en.toLowerCase().includes(query) ||
+            el.vi.toLowerCase().includes(query) ||
+            String(el.n).includes(query);
+
+        cell.classList.toggle('dimmed', !matches);
+        cell.classList.toggle('highlight', matches && query.length > 0);
+    });
+}
+
+function applyFilter() {
+    const cells = document.querySelectorAll('.el-cell');
+    cells.forEach(cell => {
+        cell.classList.remove('highlight');
+        if (currentFilter === 'all') {
+            cell.classList.remove('dimmed');
+        } else {
+            cell.classList.toggle('dimmed', cell.dataset.cat !== currentFilter);
+        }
+    });
+}
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+function applyLanguage() {
+    const t = i18n[currentLang];
+    document.getElementById('main-title').textContent = t.main_title;
+    document.getElementById('sub-title').textContent = t.sub_title;
+    document.getElementById('search-input').placeholder = t.search_placeholder;
+
+    // Update all i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (t[key]) el.textContent = t[key];
+    });
+
+    // Update series labels
+    document.querySelectorAll('[data-i18n-inner]').forEach(el => {
+        const key = el.dataset.i18nInner;
+        const label = currentLang === 'vi'
+            ? (key === 'ln' ? 'Lantanit' : 'Actinit')
+            : (key === 'ln' ? 'Lanthanides' : 'Actinides');
+        el.innerHTML = `<i class="fa-solid fa-arrow-right mr-1 text-[8px]"></i> ${label}`;
+    });
+}
+
+function updateElementNames() {
+    document.querySelectorAll('.el-cell').forEach(cell => {
+        const num = parseInt(cell.dataset.number);
+        const el = elements.find(e => e.n === num);
+        if (!el) return;
+        const nameEl = cell.querySelector('[data-el-name]');
+        if (nameEl) nameEl.textContent = currentLang === 'vi' ? el.vi : el.en;
+    });
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function applyTheme() {
+    document.documentElement.classList.toggle('dark', isDark);
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+}
+</script>
+</body>
+</html>
